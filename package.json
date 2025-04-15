@@ -1,0 +1,23 @@
+{
+  "name": "risk-game",
+  "version": "1.0.0",
+  "description": "A Risk-style game built with Phaser",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "http-server -c-1"
+  },
+  "keywords": [
+    "game",
+    "risk",
+    "phaser",
+    "strategy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "phaser": "^3.60.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
