@@ -82,24 +82,24 @@ class GameScene extends Phaser.Scene {
 
     setupGameInfo() {
         // Background for game info
-        this.add.rectangle(1000, 400, 300, 750, 0x222222);
+        this.add.rectangle(1060, 400, 300, 750, 0x222222);
 
         // Game phase text
-        this.phaseText = this.add.text(1000, 100, "Phase: Placement", {
+        this.phaseText = this.add.text(1060, 100, "Phase: Placement", {
             fontSize: "20px",
             fill: "#FFF"
         }).setOrigin(0.5)
 
         // Current player text
 
-        this.playerText = this.add.text(1000, 140, "Player: 1", {
+        this.playerText = this.add.text(1060, 140, "Player: 1", {
             fontSize: "20px",
             fill: "#FFF"
         }).setOrigin(0.5);
 
         // Action text/Instructions
 
-        this.actionText = this.add.text(1000, 180, "Place your armies", {
+        this.actionText = this.add.text(1060, 180, "Place your armies", {
             fontSize: "16px",
             fill: "#FFF",
             align: "center",
@@ -107,7 +107,7 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Dice results (will be updated during battles)
-        this.diceText = this.add.text(1000, 240, "", {
+        this.diceText = this.add.text(1060, 240, "", {
             fontSize: "16px",
             fill: "#FFF",
             align: "center"
@@ -117,8 +117,8 @@ class GameScene extends Phaser.Scene {
 
     setupButtons() {
         // End turn button
-        this.endTurnButton = this.add.rectangle(1000, 700, 200, 40, 0x444444).setInteractive();
-        this.endTurnText = this.add.text(1000, 700, "End Turn", {
+        this.endTurnButton = this.add.rectangle(1060, 700, 200, 40, 0x444444).setInteractive();
+        this.endTurnText = this.add.text(1060, 700, "End Turn", {
             fontSize: "18px",
             fill: "#FFF"
         }).setOrigin(0.5)
