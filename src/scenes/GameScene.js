@@ -7,7 +7,7 @@ const territoriesData = [
     { id: 2, name: 'North America 3', x: 300, y: 350 },
     { id: 3, name: 'South America 1', x: 300, y: 500 },
     { id: 4, name: 'South America 2', x: 350, y: 600 },
-    { id: 5, name: 'Europe 1', x: 550, y: 200 },
+    { id: 5, name: 'Europe 1', x: 620, y: 220 },
     { id: 6, name: 'Europe 2', x: 600, y: 300 },
     { id: 7, name: 'Africa 1', x: 550, y: 450 },
     { id: 8, name: 'Africa 2', x: 600, y: 550 },
@@ -31,7 +31,7 @@ class GameScene extends Phaser.Scene {
 
     create() {
         // TODO: Add background
-        this.add.image(600, 400, "world-map").setScale(1.5);
+        this.add.image(600, 400, "world-map").setScale(0.7);
 
         // Create territories
         this.createTerritories()
@@ -124,7 +124,7 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5)
 
         this.endTurnButton.on('pointerdown', () => {
-            // TODO: end turn functionality
+            this.endTurn()
         })
 
         this.endTurnButton.on("pointerover", () => {
