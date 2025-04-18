@@ -40,38 +40,37 @@ const adjacencyMapData = {
     0: [1, 2, 15],          // NA-1 connects to NA-2, NA-3, SA-1
     1: [0, 2, 3],           // NA-2 connects to NA-1, NA-3, NA-4
     2: [0, 1, 3, 8, 10],    // NA-3 connects to NA-1, NA-2, NA-4, EU-5, AF-1
-    3: [5, 1, 2],              // NA-4 connects to EU-2, NA-2, NA-3
+    3: [1, 2, 5],           // NA-4 connects to NA-2, NA-3, EU-2
 
     // Europe connections
-    4: [7, 9, 11, 20],     // EU-1 connects to  EU-4, EU-6, AF-2, AU-1
-    5: [3, 6, 8],     // EU-2 connects to NA-4, EU-3, EU-5
-    6: [5, 8, 9, 7],    // EU-3 connects to EU-2, EU-5, EU-6, EU-4
-    7: [4, 8, 9, 6, 11],        // EU-4 connects to EU-1, EU-5, EU-6, EU-3, AF-2
-    8: [2, 10, 5, 6, 7],     // EU-5 connects to NA-3, AF-1 EU-2, EU-3, EU-4
-    9: [4, 6, 7],    // EU-6 connects to EU-1, EU-3, EU-4
+    4: [7, 9, 11, 20],      // EU-1 connects to EU-4, EU-6, AF-2, AU-1
+    5: [3, 6, 8],           // EU-2 connects to NA-4, EU-3, EU-5
+    6: [5, 7, 8, 9],        // EU-3 connects to EU-2, EU-4, EU-5, EU-6
+    7: [4, 6, 9, 11],       // EU-4 connects to EU-1, EU-3, EU-6, AF-2
+    8: [2, 5, 6, 10],       // EU-5 connects to NA-3, EU-2, EU-3, AF-1
+    9: [4, 6, 7],           // EU-6 connects to EU-1, EU-3, EU-4
 
     // Africa connections
-    10: [2, 6, 11, 15],  // AF-1 connects to NA-3, EU-3, AF-2, SA-1
-    11: [9, 10, 12, 20], // AF-2 connects to EU-6, AF-1, AF-3, AU-1
-    12: [11, 13, 14],    // AF-3 connects to AF-2, AF-4, AF-5
-    13: [12, 14, 21],    // AF-4 connects to AF-3, AF-5, AU-2
-    14: [12, 13, 18],    // AF-5 connects to AF-3, AF-4, SA-4
+    10: [2, 8, 11, 14],     // AF-1 connects to NA-3, EU-5, AF-2, AF-5
+    11: [4, 7, 10, 12, 20, 14], // AF-2 connects to EU-1, EU-4, AF-1, AF-3, AU-1, AF-5
+    12: [11, 13, 14, 20, 21],      // AF-3 connects to AF-2, AF-4, AF-5, AU-1, AU-2
+    13: [12, 14, 21, 17],       // AF-4 connects to AF-3, AF-5, AU-2, SF-3
+    14: [10, 11, 12, 13, 15],       // AF-5  connects to AF-1, AF-2, AF-3, AF-4, SA-1
 
     // South America connections
-    15: [0, 10, 16, 19], // SA-1 connects to NA-1, AF-1, SA-2, SA-5
-    16: [15, 17, 19],    // SA-2 connects to SA-1, SA-3, SA-5
-    17: [16, 18, 19],    // SA-3 connects to SA-2, SA-4, SA-5
-    18: [14, 17, 19],    // SA-4 connects to AF-5, SA-3, SA-5
-    19: [15, 16, 17, 18],// SA-5 connects to SA-1, SA-2, SA-3, SA-4
+    15: [0, 16, 17, 14],    // SA-1 connects to NA-1,, SA-2, SA-3, AF-5
+    16: [15, 17, 18],       // SA-2 connects to SA-1, SA-3, SA-4
+    17: [15, 16, 18, 19, 13],   // SA-3 connects to SA-1, SA-2, SA-4, SA-5, AF-4
+    18: [16, 17, 19],       // SA-4 connects to SA-2, SA-3, SA-5
+    19: [17, 18, 24],   // SA-5 connects to  SA-3, SA-4, AU-5
 
     // Australia connections
-    20: [11, 21, 22, 23],// AU-1 connects to AF-2, AU-2, AU-3, AU-4
-    21: [13, 20, 22, 24],// AU-2 connects to AF-4, AU-1, AU-3, AU-5
-    22: [20, 21, 23, 24],// AU-3 connects to AU-1, AU-2, AU-4, AU-5
-    23: [20, 22, 24],    // AU-4 connects to AU-1, AU-3, AU-5
-    24: [21, 22, 23]     // AU-5 connects to AU-2, AU-3, AU-4
+    20: [4, 11, 13, 21, 22],// AU-1 connects to EU-1, AF-2, AF-3, AU-2, AU-3
+    21: [12, 13, 20, 22, 23, 24], // AU-2 connects to AF-3, AF-4,  AU-1, AU-3, AU-4, AU-5
+    22: [20, 21, 23],   // AU-3 connects to AU-1, AU-2, AU-4
+    23: [20, 21, 22],       // AU-4 connects to AU-1, AU-2, AU-3
+    24: [19, 21, 23]        // AU-5 connects to SA-5, AU-2, AU-4
 };
-
 
 
 // Define continents and their bonus values
