@@ -37,18 +37,18 @@ const territoriesData = [
 
 const adjacencyMapData = {
     // North America connections
-    0: [1, 3, 15],       // NA-1 connects to NA-2, NA-4, SA-1
-    1: [0, 2, 3],        // NA-2 connects to NA-1, NA-3, NA-4
-    2: [1, 3, 5, 10],    // NA-3 connects to NA-2, NA-4, EU-2, AF-1
-    3: [0, 1, 2],        // NA-4 connects to NA-1, NA-2, NA-3
+    0: [1, 2, 15],          // NA-1 connects to NA-2, NA-3, SA-1
+    1: [0, 2, 3],           // NA-2 connects to NA-1, NA-3, NA-4
+    2: [0, 1, 3, 8, 10],    // NA-3 connects to NA-1, NA-2, NA-4, EU-5, AF-1
+    3: [5, 1, 2],              // NA-4 connects to EU-2, NA-2, NA-3
 
     // Europe connections
-    4: [5, 7, 8, 9],     // EU-1 connects to EU-2, EU-4, EU-5, EU-6
-    5: [2, 4, 6, 8],     // EU-2 connects to NA-3, EU-1, EU-3, EU-5
-    6: [5, 8, 9, 10],    // EU-3 connects to EU-2, EU-5, EU-6, AF-1
-    7: [4, 8, 9],        // EU-4 connects to EU-1, EU-5, EU-6
-    8: [4, 5, 6, 7],     // EU-5 connects to EU-1, EU-2, EU-3, EU-4
-    9: [4, 6, 7, 11],    // EU-6 connects to EU-1, EU-3, EU-4, AF-2
+    4: [7, 9, 11, 20],     // EU-1 connects to  EU-4, EU-6, AF-2, AU-1
+    5: [3, 6, 8],     // EU-2 connects to NA-4, EU-3, EU-5
+    6: [5, 8, 9, 7],    // EU-3 connects to EU-2, EU-5, EU-6, EU-4
+    7: [4, 8, 9, 6, 11],        // EU-4 connects to EU-1, EU-5, EU-6, EU-3, AF-2
+    8: [2, 10, 5, 6, 7],     // EU-5 connects to NA-3, AF-1 EU-2, EU-3, EU-4
+    9: [4, 6, 7],    // EU-6 connects to EU-1, EU-3, EU-4
 
     // Africa connections
     10: [2, 6, 11, 15],  // AF-1 connects to NA-3, EU-3, AF-2, SA-1
