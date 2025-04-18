@@ -118,7 +118,7 @@ class GameScene extends Phaser.Scene {
     setupButtons() {
         // End turn button
         this.endTurnButton = this.add.rectangle(1060, 700, 200, 40, 0x444444).setInteractive();
-        this.endTurnText = this.add.text(1060, 700, "End Turn", {
+        this.endTurnText = this.add.text(1060, 700, "End Phase", {
             fontSize: "18px",
             fill: "#FFF"
         }).setOrigin(0.5)
@@ -146,7 +146,8 @@ class GameScene extends Phaser.Scene {
 
         // Calculate initial armies based on players
         const numPlayers = window.gameVars.players.length;
-        const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20) // 40 for 2 players, 35 for 3, etc
+        const initialArmies = 20;
+        // const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20) // 40 for 2 players, 35 for 3, etc
 
         window.gameVars.players.forEach(player => {
             player.armies = initialArmies;
@@ -206,6 +207,14 @@ class GameScene extends Phaser.Scene {
         // Update phase text
         this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`)
 
+        // Update end turn button text based on phase
+        if (window.gameVars.gamePhase === "attack") {
+            this.endTurnText.setText("Fortify Phase");
+        } else if (window.gameVars.gamePhase === "fortify") {
+            this.endTurnText.setText("End Turn");
+        } else {
+            this.endTurnText.setText("End Phase");
+        }
 
         // Update action text based on game phase
         if (window.gameVars.gamePhase === "placement") {
@@ -227,11 +236,28 @@ class GameScene extends Phaser.Scene {
     }
 
     endTurn() {
+        if (window.gameVars.gamePhase === "attack") {
+            window.gameVars.gamePhase = "fortify";
+
+            if (window.gameVars.selectedTerritory) {
+                window.gameVars.selectedTerritory.setSelected(false);
+            }
+            window.gameVars.selectedTerritory = null;
+            window.gameVars.targetTerritory = null;
+
+            this.updateGameInfo();
+            return;
+        }
+
+
         // Move to the next player
         window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
         // Reset selected territories
+        if (window.gameVars.selectedTerritory) {
+            window.gameVars.selectedTerritory.setSelected(false);
+        }
         window.gameVars.selectedTerritory = null;
         window.gameVars.targetTerritory = null;
 
@@ -250,6 +276,7 @@ class GameScene extends Phaser.Scene {
         this.endTurnButton.disableInteractive();
         this.endTurnButton.setFillStyle(0x333333);
     }
+
 
     handleTerritoryClick(territory) {
 
@@ -308,7 +335,7 @@ class GameScene extends Phaser.Scene {
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
                     window.gameVars.selectedTerritory = territory;
                     territory.setSelected(true);
-                    this.actionText.setText("Select an adjacent friendly territory to fortity")
+                    this.actionText.setText("Select an adjacent friendly territory to fortify")
                 }
             } else {
                 // selection the destination territory
@@ -340,6 +367,8 @@ class GameScene extends Phaser.Scene {
     resolveAttack() {
         const attacker = window.gameVars.selectedTerritory;
         const defender = window.gameVars.targetTerritory;
+
+        console.log("resolve attack running", attacker, defender)
 
         // Maximum number of dice
 
@@ -442,13 +471,14 @@ class GameScene extends Phaser.Scene {
         const destination = window.gameVars.targetTerritory;
 
         // Move armies (right now just moving half of armies)
+        // ? Even if the source have 2 armies it's saying not enough armies because in this case armies to move returning to 0  
         const armiesToMove = Math.floor((source.armies - 1) / 2);
         if (armiesToMove > 0) {
             source.removeArmies(armiesToMove);
             destination.addArmies(armiesToMove);
             this.actionText.setText(`Moved ${armiesToMove} armies from ${source.name} to ${destination.name}`)
         } else {
-            this.actionText.setText("Not enough armies to fortity")
+            this.actionText.setText("Not enough armies to fortify")
         }
 
         // Reset selections
@@ -459,8 +489,12 @@ class GameScene extends Phaser.Scene {
 
     checkGameOver() {
         // Check if any player has conquered all territories
+        console.log("CHECKING GAME OVER")
         window.gameVars.players.forEach((player, index) => {
+            console.log("player.territories.length", player.territories.length)
+            console.log("this.territories.length", this.territories.length)
             if (player.territories.length === this.territories.length) {
+                console.log("game over")
                 this.gameOver(index)
             }
         })
