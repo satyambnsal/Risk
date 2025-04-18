@@ -1,34 +1,35 @@
 class Territory {
-    constructor(scene, x, y, name, id) {
+    constructor(scene, x, y, name, id, continent) {
         this.scene = scene;
         this.id = id;
         this.name = name;
         this.owner = null; // Player ID who owns this territory
         this.armies = 0;
         this.isSelected = false;
+        this.continent = continent;
 
-        // Visual elements
-        this.circle = scene.add.circle(x, y, 30, 0xCCCCCC, 0.8);
-        this.circle.setInteractive();
+        // Visual elements - using the neutral version of this specific territory
+        //TODO: right now we also don't have any image for the the neutral but it's not compulsory to add
+        this.territoryImage = scene.add.image(x, y, `territory-${id}-neutral`);
+        this.territoryImage.setInteractive();
 
-        this.circle.on('pointerdown', () => {
+        this.territoryImage.on('pointerdown', () => {
             scene.handleTerritoryClick(this);
         });
 
-        this.circle.on('pointerover', () => {
+        this.territoryImage.on('pointerover', () => {
             if (!this.isSelected) {
-                this.circle.setStrokeStyle(3, 0xFFFFFF);
+                this.territoryImage.setTint(0xFFFFFF);
             }
         });
 
-        this.circle.on('pointerout', () => {
+        this.territoryImage.on('pointerout', () => {
             if (!this.isSelected) {
-                this.circle.setStrokeStyle(0);
+                this.territoryImage.clearTint();
             }
         });
-
-        // Text label for territory name
-        this.nameText = scene.add.text(x, y - 25, name, {
+        // TODO: fix name positions
+        this.nameText = scene.add.text(x - 10, y - 15, name, {
             fontSize: '12px',
             fill: '#FFF',
             stroke: '#000',
@@ -47,7 +48,13 @@ class Territory {
 
     setOwner(player) {
         this.owner = player.id;
-        this.circle.setFillStyle(player.color, 0.8);
+        //TODO: We are not using cyan color, so right now it will show broken image if user choose 6 players
+        const colorNames = ['red', 'blue', 'green', 'yellow', 'purple', 'cyan'];
+        const colorName = colorNames[player.id];
+
+        // Each territory has its own unique image for each color
+        this.territoryImage.setTexture(`territory-${this.id}-${colorName}`);
+        this.territoryImage.setScale(0.6)
     }
 
     setArmies(count) {
@@ -68,9 +75,9 @@ class Territory {
     setSelected(selected) {
         this.isSelected = selected;
         if (selected) {
-            this.circle.setStrokeStyle(4, 0xFFFF00);
+            this.territoryImage.setTint(0xFFFF00); // Yellow highlight
         } else {
-            this.circle.setStrokeStyle(0);
+            this.territoryImage.clearTint();
         }
     }
 }

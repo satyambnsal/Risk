@@ -1,83 +1,160 @@
-
-// TODO: need more with proper shapes
-
 const territoriesData = [
-    { id: 0, name: 'North America 1', x: 250, y: 200 },
-    { id: 1, name: 'North America 2', x: 350, y: 250 },
-    { id: 2, name: 'North America 3', x: 300, y: 350 },
-    { id: 3, name: 'South America 1', x: 300, y: 500 },
-    { id: 4, name: 'South America 2', x: 350, y: 600 },
-    { id: 5, name: 'Europe 1', x: 620, y: 220 },
-    { id: 6, name: 'Europe 2', x: 600, y: 300 },
-    { id: 7, name: 'Africa 1', x: 550, y: 450 },
-    { id: 8, name: 'Africa 2', x: 600, y: 550 },
-    { id: 9, name: 'Asia 1', x: 750, y: 200 },
-    { id: 10, name: 'Asia 2', x: 850, y: 250 },
-    { id: 11, name: 'Asia 3', x: 800, y: 350 },
-    { id: 12, name: 'Australia 1', x: 900, y: 550 },
-    { id: 13, name: 'Australia 2', x: 950, y: 650 }
+    // North America (Red) - 4 territories
+    { id: 0, name: 'NA-1', x: 155, y: 240, continent: 'North America' },
+    { id: 1, name: 'NA-2', x: 152, y: 162, continent: 'North America' },
+    { id: 2, name: 'NA-3', x: 240, y: 186, continent: 'North America' },
+    { id: 3, name: 'NA-4', x: 201, y: 115, continent: 'North America' },
+
+    // Europe (Green) - 6 territories
+    { id: 4, name: 'EU-1', x: 516, y: 247, continent: 'Europe' },
+    { id: 5, name: 'EU-2', x: 440, y: 88, continent: 'Europe' },
+    { id: 6, name: 'EU-3', x: 523, y: 123, continent: 'Europe' },
+    { id: 7, name: 'EU-4', x: 454, y: 200, continent: 'Europe' },
+    { id: 8, name: 'EU-5', x: 423, y: 150, continent: 'Europe' },
+    { id: 9, name: 'EU-6', x: 543, y: 182, continent: 'Europe' },
+
+    // Africa (Blue) - 5 territories
+    { id: 10, name: 'AF-1', x: 339, y: 223, continent: 'Africa' },
+    { id: 11, name: 'AF-2', x: 386, y: 263, continent: 'Africa' },
+    { id: 12, name: 'AF-3', x: 384, y: 348, continent: 'Africa' },
+    { id: 13, name: 'AF-4', x: 298, y: 375, continent: 'Africa' },
+    { id: 14, name: 'AF-5', x: 308, y: 296, continent: 'Africa' },
+
+    // South America (Yellow) - 5 territories
+    { id: 15, name: 'SA-1', x: 155, y: 355, continent: 'South America' },
+    { id: 16, name: 'SA-2', x: 140, y: 416, continent: 'South America' },
+    { id: 17, name: 'SA-3', x: 199, y: 427, continent: 'South America' },
+    { id: 18, name: 'SA-4', x: 155, y: 504, continent: 'South America' },
+    { id: 19, name: 'SA-5', x: 239, y: 490, continent: 'South America' },
+
+    // Australia (Purple) - 5 territories
+    { id: 20, name: 'AU-1', x: 510, y: 345, continent: 'Australia' },
+    { id: 21, name: 'AU-2', x: 450, y: 424, continent: 'Australia' },
+    { id: 22, name: 'AU-3', x: 569, y: 411, continent: 'Australia' },
+    { id: 23, name: 'AU-4', x: 508, y: 497, continent: 'Australia' },
+    { id: 24, name: 'AU-5', x: 430, y: 509, continent: 'Australia' }
 ];
+
+const adjacencyMapData = {
+    // North America connections
+    0: [1, 3, 15],       // NA-1 connects to NA-2, NA-4, SA-1
+    1: [0, 2, 3],        // NA-2 connects to NA-1, NA-3, NA-4
+    2: [1, 3, 5, 10],    // NA-3 connects to NA-2, NA-4, EU-2, AF-1
+    3: [0, 1, 2],        // NA-4 connects to NA-1, NA-2, NA-3
+
+    // Europe connections
+    4: [5, 7, 8, 9],     // EU-1 connects to EU-2, EU-4, EU-5, EU-6
+    5: [2, 4, 6, 8],     // EU-2 connects to NA-3, EU-1, EU-3, EU-5
+    6: [5, 8, 9, 10],    // EU-3 connects to EU-2, EU-5, EU-6, AF-1
+    7: [4, 8, 9],        // EU-4 connects to EU-1, EU-5, EU-6
+    8: [4, 5, 6, 7],     // EU-5 connects to EU-1, EU-2, EU-3, EU-4
+    9: [4, 6, 7, 11],    // EU-6 connects to EU-1, EU-3, EU-4, AF-2
+
+    // Africa connections
+    10: [2, 6, 11, 15],  // AF-1 connects to NA-3, EU-3, AF-2, SA-1
+    11: [9, 10, 12, 20], // AF-2 connects to EU-6, AF-1, AF-3, AU-1
+    12: [11, 13, 14],    // AF-3 connects to AF-2, AF-4, AF-5
+    13: [12, 14, 21],    // AF-4 connects to AF-3, AF-5, AU-2
+    14: [12, 13, 18],    // AF-5 connects to AF-3, AF-4, SA-4
+
+    // South America connections
+    15: [0, 10, 16, 19], // SA-1 connects to NA-1, AF-1, SA-2, SA-5
+    16: [15, 17, 19],    // SA-2 connects to SA-1, SA-3, SA-5
+    17: [16, 18, 19],    // SA-3 connects to SA-2, SA-4, SA-5
+    18: [14, 17, 19],    // SA-4 connects to AF-5, SA-3, SA-5
+    19: [15, 16, 17, 18],// SA-5 connects to SA-1, SA-2, SA-3, SA-4
+
+    // Australia connections
+    20: [11, 21, 22, 23],// AU-1 connects to AF-2, AU-2, AU-3, AU-4
+    21: [13, 20, 22, 24],// AU-2 connects to AF-4, AU-1, AU-3, AU-5
+    22: [20, 21, 23, 24],// AU-3 connects to AU-1, AU-2, AU-4, AU-5
+    23: [20, 22, 24],    // AU-4 connects to AU-1, AU-3, AU-5
+    24: [21, 22, 23]     // AU-5 connects to AU-2, AU-3, AU-4
+};
+
+
+
+// Define continents and their bonus values
+const continentsData = {
+    'North America': { territories: [0, 1, 2, 3], bonus: 5 },
+    'Europe': { territories: [4, 5, 6, 7, 8, 9], bonus: 5 },
+    'Africa': { territories: [10, 11, 12, 13, 14], bonus: 3 },
+    'South America': { territories: [15, 16, 17, 18, 19], bonus: 2 },
+    'Australia': { territories: [20, 21, 22, 23, 24], bonus: 2 }
+};
 
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
         this.territories = [];
-        this.adjacencyMap = {};
+        this.adjacencyMap = adjacencyMapData;
         this.phaseText = null;
         this.playerText = null;
         this.actionText = null;
-        this.diceRestuls = [];
+        this.diceResults = [];
+        this.continents = continentsData;
     }
 
     create() {
-        // TODO: Add background
-        this.add.image(600, 400, "world-map").setScale(0.7);
+        // Add a dark background
+        this.add.rectangle(600, 400, 1200, 800, 0x000000).setOrigin(0.5);
 
         // Create territories
-        this.createTerritories()
+        this.createTerritories();
 
-        // Setup connections between territories
-        this.setupAdjacenyMap()
+        // Draw connection lines between territories
+        this.drawConnectionLines();
 
         // Initialize game info display
-        this.setupGameInfo()
+        this.setupGameInfo();
 
         // Create action button
         this.setupButtons();
 
         // Start the initial placement phase
-        this.startPlacementPhase()
-
+        this.startPlacementPhase();
     }
 
     createTerritories() {
-
-
         // Create territory objects
         this.territories = territoriesData.map(data => {
-            const territory = new Territory(this, data.x, data.y, data.name, data.id);
+            const territory = new Territory(
+                this,
+                data.x,
+                data.y,
+                data.name,
+                data.id,
+                data.continent
+            );
             return territory;
-        })
+        });
     }
 
-    setupAdjacenyMap() {
-        // Define which territories are adjacent
-        this.adjacencyMap = {
-            0: [1, 5],     // North America 1 connects to North America 2 and Europe 1
-            1: [0, 2, 6],  // North America 2 connects to North America 1, North America 3, and Europe 2
-            2: [1, 3],     // North America 3 connects to North America 2 and South America 1
-            3: [2, 4, 7],  // South America 1 connects to North America 3, South America 2, and Africa 1
-            4: [3, 8],     // South America 2 connects to South America 1 and Africa 2
-            5: [0, 6, 9],  // Europe 1 connects to North America 1, Europe 2, and Asia 1
-            6: [1, 5, 7, 11], // Europe 2 connects to North America 2, Europe 1, Africa 1, and Asia 3
-            7: [3, 6, 8],  // Africa 1 connects to South America 1, Europe 2, and Africa 2
-            8: [4, 7, 12], // Africa 2 connects to South America 2, Africa 1, and Australia 1
-            9: [5, 10],    // Asia 1 connects to Europe 1 and Asia 2
-            10: [9, 11],   // Asia 2 connects to Asia 1 and Asia 3
-            11: [6, 10, 12], // Asia 3 connects to Europe 2, Asia 2, and Australia 1
-            12: [8, 11, 13], // Australia 1 connects to Africa 2, Asia 3, and Australia 2
-            13: [12]       // Australia 2 connects to Australia 1
-        };
+    drawConnectionLines() {
+        // Create a graphics object for drawing lines
+        const graphics = this.add.graphics();
+        graphics.lineStyle(2, 0x444444, 0.8);
+
+        // Draw lines between adjacent territories
+        for (let i = 0; i < this.territories.length; i++) {
+            const territory = this.territories[i];
+            const adjacentIds = this.adjacencyMap[territory.id];
+
+            for (let j = 0; j < adjacentIds.length; j++) {
+                const adjacentId = adjacentIds[j];
+
+                // Only draw each connection once
+                if (adjacentId > territory.id) {
+                    const adjacentTerritory = this.territories.find(t => t.id === adjacentId);
+                    graphics.lineBetween(
+                        territory.territoryImage.x,
+                        territory.territoryImage.y,
+                        adjacentTerritory.territoryImage.x,
+                        adjacentTerritory.territoryImage.y
+                    );
+                }
+            }
+        }
     }
 
     setupGameInfo() {
@@ -88,17 +165,15 @@ class GameScene extends Phaser.Scene {
         this.phaseText = this.add.text(1060, 100, "Phase: Placement", {
             fontSize: "20px",
             fill: "#FFF"
-        }).setOrigin(0.5)
+        }).setOrigin(0.5);
 
         // Current player text
-
         this.playerText = this.add.text(1060, 140, "Player: 1", {
             fontSize: "20px",
             fill: "#FFF"
         }).setOrigin(0.5);
 
         // Action text/Instructions
-
         this.actionText = this.add.text(1060, 180, "Place your armies", {
             fontSize: "16px",
             fill: "#FFF",
@@ -111,8 +186,25 @@ class GameScene extends Phaser.Scene {
             fontSize: "16px",
             fill: "#FFF",
             align: "center"
-        }).setOrigin(0.5)
+        }).setOrigin(0.5);
 
+        // Continent bonus information
+        // yPos = y position
+        let yPos = 300;
+        this.add.text(1060, yPos, "Continent Bonuses:", {
+            fontSize: "16px",
+            fill: "#FFF",
+            fontStyle: "bold"
+        }).setOrigin(0.5);
+
+        yPos += 30;
+        for (const continent in this.continents) {
+            this.add.text(1060, yPos, `${continent}: +${this.continents[continent].bonus}`, {
+                fontSize: "14px",
+                fill: "#FFF"
+            }).setOrigin(0.5);
+            yPos += 20;
+        }
     }
 
     setupButtons() {
@@ -121,19 +213,19 @@ class GameScene extends Phaser.Scene {
         this.endTurnText = this.add.text(1060, 700, "End Phase", {
             fontSize: "18px",
             fill: "#FFF"
-        }).setOrigin(0.5)
+        }).setOrigin(0.5);
 
         this.endTurnButton.on('pointerdown', () => {
-            this.endTurn()
-        })
+            this.endTurn();
+        });
 
         this.endTurnButton.on("pointerover", () => {
-            this.endTurnButton.setFillStyle(0x666666)
-        })
+            this.endTurnButton.setFillStyle(0x666666);
+        });
 
         this.endTurnButton.on("pointerout", () => {
-            this.endTurnButton.setFillStyle(0x444444)
-        })
+            this.endTurnButton.setFillStyle(0x444444);
+        });
 
         // Initially disable end turn button during placement
         this.endTurnButton.disableInteractive();
@@ -146,19 +238,18 @@ class GameScene extends Phaser.Scene {
 
         // Calculate initial armies based on players
         const numPlayers = window.gameVars.players.length;
-        const initialArmies = 20;
-        // const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20) // 40 for 2 players, 35 for 3, etc
+        const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20);
 
         window.gameVars.players.forEach(player => {
             player.armies = initialArmies;
             player.reinforcements = initialArmies;
-        })
+        });
 
         // Randomly assign territories to players
-        this.assignTerritories()
+        this.assignTerritories();
 
         // Update display
-        this.updateGameInfo()
+        this.updateGameInfo();
     }
 
     assignTerritories() {
@@ -166,7 +257,6 @@ class GameScene extends Phaser.Scene {
         const territoryIds = this.territories.map(t => t.id);
 
         // Shuffle territory Ids
-
         for (let i = territoryIds.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [territoryIds[i], territoryIds[j]] = [territoryIds[j], territoryIds[i]];
@@ -184,7 +274,7 @@ class GameScene extends Phaser.Scene {
             // Assign territory to player
             territory.setOwner(player);
 
-            // Places one arty on the territory because every territory mush have atleast 1 army according to risk rule
+            // Places one army on the territory because every territory must have at least 1 army according to risk rule
             territory.setArmies(1);
 
             // Add territory to player's list 
@@ -194,18 +284,17 @@ class GameScene extends Phaser.Scene {
             // The player has one less reinforcement
             player.reinforcements--;
         }
-
     }
 
     updateGameInfo() {
-        const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex]
+        const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
         // Update player text with color
         this.playerText.setText(`Player: ${window.gameVars.currentPlayerIndex + 1}`);
         this.playerText.setColor(this.hexNumToHexString(currentPlayer.color));
 
         // Update phase text
-        this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`)
+        this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`);
 
         // Update end turn button text based on phase
         if (window.gameVars.gamePhase === "attack") {
@@ -218,11 +307,11 @@ class GameScene extends Phaser.Scene {
 
         // Update action text based on game phase
         if (window.gameVars.gamePhase === "placement") {
-            this.actionText.setText(`Place your armies\nRemaining ${currentPlayer.reinforcements}`)
+            this.actionText.setText(`Place your armies\nRemaining ${currentPlayer.reinforcements}`);
         } else if (window.gameVars.gamePhase === "attack") {
             this.actionText.setText("Select your territory to attack from");
         } else if (window.gameVars.gamePhase === "fortify") {
-            this.actionText.setText("Select territory to move armies from or end turn")
+            this.actionText.setText("Select territory to move armies from or end turn");
         }
     }
 
@@ -249,7 +338,6 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
-
         // Move to the next player
         window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
@@ -261,10 +349,8 @@ class GameScene extends Phaser.Scene {
         window.gameVars.selectedTerritory = null;
         window.gameVars.targetTerritory = null;
 
-
-        // Calculate reinforcement 
-        const territoriesCount = currentPlayer.territories.length;
-        currentPlayer.reinforcements = Math.max(Math.floor(territoriesCount / 3), 3);
+        // Calculate reinforcements including continent bonuses
+        currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer);
 
         // Move to reinforcement phase 
         window.gameVars.gamePhase = "placement";
@@ -277,15 +363,32 @@ class GameScene extends Phaser.Scene {
         this.endTurnButton.setFillStyle(0x333333);
     }
 
+    calculateReinforcements(player) {
+        // Base reinforcements from territories
+        let reinforcements = Math.max(Math.floor(player.territories.length / 3), 3);
+
+        // Add bonuses for continents
+        for (const continent in this.continents) {
+            const continentTerritories = this.continents[continent].territories;
+            const bonus = this.continents[continent].bonus;
+
+            // Check if player owns all territories in the continent
+            const ownsAll = continentTerritories.every(territoryId => player.territories.includes(territoryId));
+
+            if (ownsAll) {
+                reinforcements += bonus;
+            }
+        }
+
+        return reinforcements;
+    }
 
     handleTerritoryClick(territory) {
-
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
         if (window.gameVars.gamePhase === "placement") {
             if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
                 // Place an army
-
                 territory.addArmies(1);
                 currentPlayer.reinforcements--;
                 this.updateGameInfo();
@@ -297,36 +400,35 @@ class GameScene extends Phaser.Scene {
 
                     // Enable end turn button
                     this.endTurnButton.setInteractive();
-                    this.endTurnButton.setFillStyle(0x444444)
+                    this.endTurnButton.setFillStyle(0x444444);
                 }
             }
         } else if (window.gameVars.gamePhase === "attack") {
             if (window.gameVars.selectedTerritory === null) {
                 // selecting the attacking territory
-                // TODO: When user clicks on territory having just 1 army show some toast or something to inform user that you can not attack from territory that have just one troop
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
                     window.gameVars.selectedTerritory = territory;
                     territory.setSelected(true);
                     this.actionText.setText("Select an adjacent territory to attack");
+                } else if (territory.owner === currentPlayer.id && territory.armies <= 1) {
+                    this.actionText.setText("Need at least 2 armies to attack");
                 }
-                // If user is not the owner of selected territory or have less than 1 army on the territory then do nothing
             } else {
-
                 // Selecting the defending territory and attack
                 if (territory.owner !== currentPlayer.id &&
                     this.areAdjacent(window.gameVars.selectedTerritory.id, territory.id)
                 ) {
                     window.gameVars.targetTerritory = territory;
-                    this.resolveAttack()
+                    this.resolveAttack();
                 } else if (territory === window.gameVars.selectedTerritory) {
                     window.gameVars.selectedTerritory.setSelected(false);
                     window.gameVars.selectedTerritory = null;
-                    this.actionText.setText("Select your territory to attack from")
+                    this.actionText.setText("Select your territory to attack from");
                 } else {
                     // Invalid target, reset selection
                     window.gameVars.selectedTerritory.setSelected(false);
                     window.gameVars.selectedTerritory = null;
-                    this.actionText.setText("Invalid target. Select your territory to attack from")
+                    this.actionText.setText("Invalid target. Select your territory to attack from");
                 }
             }
         } else if (window.gameVars.gamePhase === "fortify") {
@@ -335,26 +437,26 @@ class GameScene extends Phaser.Scene {
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
                     window.gameVars.selectedTerritory = territory;
                     territory.setSelected(true);
-                    this.actionText.setText("Select an adjacent friendly territory to fortify")
+                    this.actionText.setText("Select an adjacent friendly territory to fortify");
                 }
             } else {
-                // selection the destination territory
+                // Selection the destination territory
                 if (territory.owner === currentPlayer.id &&
                     territory !== window.gameVars.selectedTerritory &&
                     this.areAdjacent(window.gameVars.selectedTerritory.id, territory.id)
                 ) {
                     window.gameVars.targetTerritory = territory;
-                    this.fortifyTerritory()
+                    this.fortifyTerritory();
                 } else if (territory === window.gameVars.selectedTerritory) {
                     // Deselect
                     window.gameVars.selectedTerritory.setSelected(false);
                     window.gameVars.selectedTerritory = null;
-                    this.actionText.setText("Select territory to move armies from or end turn")
+                    this.actionText.setText("Select territory to move armies from or end turn");
                 } else {
                     // Invalid target, reset selection
                     window.gameVars.selectedTerritory.setSelected(false);
                     window.gameVars.selectedTerritory = null;
-                    this.actionText.setText("Invalid target. Select territory to move armies or end turn")
+                    this.actionText.setText("Invalid target. Select territory to move armies or end turn");
                 }
             }
         }
@@ -368,30 +470,17 @@ class GameScene extends Phaser.Scene {
         const attacker = window.gameVars.selectedTerritory;
         const defender = window.gameVars.targetTerritory;
 
-        console.log("resolve attack running", attacker, defender)
-
         // Maximum number of dice
-
-
-        // we put 3 here because attacker can roll a max of 3 dice,
-        // we are doing `attacker.armies - 1` here because in any case attacker can not leave his territory empty
-        // In the case if attacker has 3 army if attacker attacks with all 3 army and wins his territory will be empty
-        // that's why we are taking one less than the count of army
         const maxAttackerDice = Math.min(3, attacker.armies - 1);
-
-
-        // we put 2 here because defender can roll a max of 2 dice,
-        // And can not role more than the number or armies in the territory
         const maxDefenderDice = Math.min(2, defender.armies);
-
 
         // Roll dice
         const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a);
-        const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a)
+        const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a);
 
         // Display dice results
         this.diceText.setText(
-            `Attacker rolls : ${attackerDice.join(', ')}\n` +
+            `Attacker rolls: ${attackerDice.join(', ')}\n` +
             `Defender rolls: ${defenderDice.join(', ')}`
         );
 
@@ -399,11 +488,10 @@ class GameScene extends Phaser.Scene {
         let attackerLosses = 0;
         let defenderLosses = 0;
 
-
         for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
             // Even if the defender got equals to attacker defender wins and attacker losses
             if (attackerDice[i] > defenderDice[i]) {
-                defenderLosses++
+                defenderLosses++;
             } else {
                 attackerLosses++;
             }
@@ -418,11 +506,11 @@ class GameScene extends Phaser.Scene {
             `Battle results\n` +
             `Attacker lost ${attackerLosses} armies\n` +
             `Defender lost ${defenderLosses} armies`
-        )
+        );
 
         // Check if defender was defeated
         if (defender.armies <= 0) {
-            this.captureTerritory(attacker, defender)
+            this.captureTerritory(attacker, defender);
         }
 
         // Reset selections
@@ -431,26 +519,23 @@ class GameScene extends Phaser.Scene {
         window.gameVars.targetTerritory = null;
 
         // Check for game over
-        this.checkGameOver()
+        this.checkGameOver();
     }
 
     rollDice(count) {
         const results = [];
         for (let i = 0; i < count; i++) {
-            results.push(Math.floor(Math.random() * 6) + 1)
+            results.push(Math.floor(Math.random() * 6) + 1);
         }
-
-        return results
+        return results;
     }
 
-    // attacker and defender are territories
     captureTerritory(attacker, defender) {
         const attackerPlayer = window.gameVars.players[attacker.owner];
         const defenderPlayer = window.gameVars.players[defender.owner];
 
         // Remove territory from defender's list
         const index = defenderPlayer.territories.indexOf(defender.id);
-        // If index is -1 means territory doesn't find the defender player
         if (index > -1) {
             defenderPlayer.territories.splice(index, 1);
         }
@@ -460,10 +545,13 @@ class GameScene extends Phaser.Scene {
 
         // Transfer ownership and move armies
         defender.setOwner(attackerPlayer);
-        defender.setArmies(Math.max(attacker.armies - 1, 1));
+
+        // Move armies (minimum of 1, up to attacker.armies - 1)
+        const armiesToMove = Math.max(attacker.armies - 1, 1);
+        defender.setArmies(armiesToMove);
         attacker.setArmies(1);
 
-        this.actionText.setText(`You captured ${defender.name}`)
+        this.actionText.setText(`You captured ${defender.name}!`);
     }
 
     fortifyTerritory() {
@@ -471,33 +559,28 @@ class GameScene extends Phaser.Scene {
         const destination = window.gameVars.targetTerritory;
 
         // Move armies (right now just moving half of armies)
-        // ? Even if the source have 2 armies it's saying not enough armies because in this case armies to move returning to 0  
         const armiesToMove = Math.floor((source.armies - 1) / 2);
         if (armiesToMove > 0) {
             source.removeArmies(armiesToMove);
             destination.addArmies(armiesToMove);
-            this.actionText.setText(`Moved ${armiesToMove} armies from ${source.name} to ${destination.name}`)
+            this.actionText.setText(`Moved ${armiesToMove} armies from ${source.name} to ${destination.name}`);
         } else {
-            this.actionText.setText("Not enough armies to fortify")
+            this.actionText.setText("Not enough armies to fortify");
         }
 
         // Reset selections
-        source.setSelected(false)
+        source.setSelected(false);
         window.gameVars.selectedTerritory = null;
         window.gameVars.targetTerritory = null;
     }
 
     checkGameOver() {
         // Check if any player has conquered all territories
-        console.log("CHECKING GAME OVER")
         window.gameVars.players.forEach((player, index) => {
-            console.log("player.territories.length", player.territories.length)
-            console.log("this.territories.length", this.territories.length)
             if (player.territories.length === this.territories.length) {
-                console.log("game over")
-                this.gameOver(index)
+                this.gameOver(index);
             }
-        })
+        });
     }
 
     gameOver(winnerIndex) {
@@ -506,13 +589,12 @@ class GameScene extends Phaser.Scene {
         this.add.text(600, 350, "GAME OVER", {
             fontSize: "48px",
             fill: "#FFF"
-        }).setOrigin(0.5)
-
+        }).setOrigin(0.5);
 
         this.add.text(600, 425, `Player ${winnerIndex + 1} Wins!`, {
             fontSize: "32px",
             fill: this.hexNumToHexString(window.gameVars.players[winnerIndex].color)
-        }).setOrigin(0.5)
+        }).setOrigin(0.5);
 
         // Add restart button
         const restartButton = this.add.rectangle(600, 500, 200, 50, 0x444444).setInteractive();
@@ -521,9 +603,8 @@ class GameScene extends Phaser.Scene {
             fill: "#FFF"
         }).setOrigin(0.5);
 
-
         restartButton.on("pointerdown", () => {
-            this.scene.start("MainMenuScene")
-        })
+            this.scene.start("MainMenuScene");
+        });
     }
 }
