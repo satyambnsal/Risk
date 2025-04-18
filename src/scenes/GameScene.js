@@ -159,22 +159,22 @@ class GameScene extends Phaser.Scene {
 
     setupGameInfo() {
         // Background for game info
-        this.add.rectangle(1060, 400, 300, 750, 0x222222);
+        this.add.rectangle(950, 400, 300, 750, 0x222222);
 
         // Game phase text
-        this.phaseText = this.add.text(1060, 100, "Phase: Placement", {
+        this.phaseText = this.add.text(950, 100, "Phase: Placement", {
             fontSize: "20px",
             fill: "#FFF"
         }).setOrigin(0.5);
 
         // Current player text
-        this.playerText = this.add.text(1060, 140, "Player: 1", {
+        this.playerText = this.add.text(950, 140, "Player: 1", {
             fontSize: "20px",
             fill: "#FFF"
         }).setOrigin(0.5);
 
         // Action text/Instructions
-        this.actionText = this.add.text(1060, 180, "Place your armies", {
+        this.actionText = this.add.text(950, 180, "Place your armies", {
             fontSize: "16px",
             fill: "#FFF",
             align: "center",
@@ -182,7 +182,7 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // Dice results (will be updated during battles)
-        this.diceText = this.add.text(1060, 240, "", {
+        this.diceText = this.add.text(950, 240, "", {
             fontSize: "16px",
             fill: "#FFF",
             align: "center"
@@ -191,7 +191,7 @@ class GameScene extends Phaser.Scene {
         // Continent bonus information
         // yPos = y position
         let yPos = 300;
-        this.add.text(1060, yPos, "Continent Bonuses:", {
+        this.add.text(950, yPos, "Continent Bonuses:", {
             fontSize: "16px",
             fill: "#FFF",
             fontStyle: "bold"
@@ -199,7 +199,7 @@ class GameScene extends Phaser.Scene {
 
         yPos += 30;
         for (const continent in this.continents) {
-            this.add.text(1060, yPos, `${continent}: +${this.continents[continent].bonus}`, {
+            this.add.text(950, yPos, `${continent}: +${this.continents[continent].bonus}`, {
                 fontSize: "14px",
                 fill: "#FFF"
             }).setOrigin(0.5);
@@ -209,8 +209,8 @@ class GameScene extends Phaser.Scene {
 
     setupButtons() {
         // End turn button
-        this.endTurnButton = this.add.rectangle(1060, 700, 200, 40, 0x444444).setInteractive();
-        this.endTurnText = this.add.text(1060, 700, "End Phase", {
+        this.endTurnButton = this.add.rectangle(950, 700, 200, 40, 0x444444).setInteractive();
+        this.endTurnText = this.add.text(950, 700, "End Phase", {
             fontSize: "18px",
             fill: "#FFF"
         }).setOrigin(0.5);
