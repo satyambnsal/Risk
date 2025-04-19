@@ -83,7 +83,7 @@ class MainMenuScene extends Phaser.Scene {
         window.gameVars.players = [];
 
         // Player colors
-        const colors = [0xFF0000, 0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF];
+        const colors = [0xCF402E, 0x2CA5C7, 0x96C72C, 0xC7B52C, 0xB52CC7, 0x00FFFF];
 
         // Create players
         for (let i = 0; i < numPlayers; i++) {
