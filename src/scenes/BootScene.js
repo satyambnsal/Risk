@@ -33,6 +33,12 @@ class BootScene extends Phaser.Scene {
             }
         }
 
+
+        this.load.spritesheet('dice', 'assets/images/dice.png', {
+            frameWidth: 64,
+            frameHeight: 64
+        });
+
         this.load.image('button', 'assets/images/button.png');
 
         // Update loading bar

@@ -107,6 +107,9 @@ class GameScene extends Phaser.Scene {
         // Initialize game info display
         this.setupGameInfo();
 
+        // Create dice display
+        this.createDiceDisplay();
+
         // Create action button
         this.setupButtons();
 
@@ -189,7 +192,7 @@ class GameScene extends Phaser.Scene {
 
         // Continent bonus information
         // yPos = y position
-        let yPos = 300;
+        let yPos = 500;
         this.add.text(950, yPos, "Continent Bonuses:", {
             fontSize: "16px",
             fill: "#FFF",
@@ -477,18 +480,16 @@ class GameScene extends Phaser.Scene {
         const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a);
         const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a);
 
-        // Display dice results
-        this.diceText.setText(
-            `Attacker rolls: ${attackerDice.join(', ')}\n` +
-            `Defender rolls: ${defenderDice.join(', ')}`
-        );
+        // attackerDice and defender dice are the final number both the attacker and defender gets after rolling dice
+
+        // Display dice results visually
+        this.showDiceRoll(attackerDice, defenderDice);
 
         // Compare dice pairs
         let attackerLosses = 0;
         let defenderLosses = 0;
 
         for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
-            // Even if the defender got equals to attacker defender wins and attacker losses
             if (attackerDice[i] > defenderDice[i]) {
                 defenderLosses++;
             } else {
@@ -606,4 +607,136 @@ class GameScene extends Phaser.Scene {
             this.scene.start("MainMenuScene");
         });
     }
+
+    createDiceDisplay() {
+        // Create a container for dice display
+        this.diceContainer = this.add.container(950, 280);
+        this.diceContainer.setVisible(false);
+
+        // Title text
+        this.diceContainer.add(this.add.text(0, -40, "DICE BATTLE", {
+            fontSize: '18px',
+            fill: '#FFFFFF',
+            fontStyle: 'bold'
+        }).setOrigin(0.5));
+
+        // Attacker label
+        this.diceContainer.add(this.add.text(-100, -20, "Attacker", {
+            fontSize: '14px',
+            fill: '#FF0000'
+        }).setOrigin(0.5));
+
+        // Defender label
+        this.diceContainer.add(this.add.text(100, -20, "Defender", {
+            fontSize: '14px',
+            fill: '#0000FF'
+        }).setOrigin(0.5));
+
+        // Create placeholders for attacker dice
+        this.attackerDiceSprites = [];
+        for (let i = 0; i < 3; i++) {
+            const diceSprite = this.add.sprite(-100, 20 + i * 70, 'dice', 0);
+            diceSprite.setVisible(false);
+            this.diceContainer.add(diceSprite);
+            this.attackerDiceSprites.push(diceSprite);
+        }
+
+        // Create placeholders for defender dice
+        this.defenderDiceSprites = [];
+        for (let i = 0; i < 2; i++) {
+            const diceSprite = this.add.sprite(100, 20 + i * 70, 'dice', 0);
+            diceSprite.setVisible(false);
+            this.diceContainer.add(diceSprite);
+            this.defenderDiceSprites.push(diceSprite);
+        }
+
+        // Result indicators (win/loss)
+        this.resultIndicators = [];
+        for (let i = 0; i < 3; i++) {
+            const winIndicator = this.add.text(0, 20 + i * 70, "", {
+                fontSize: '24px',
+                fontStyle: 'bold'
+            }).setOrigin(0.5);
+            this.diceContainer.add(winIndicator);
+            this.resultIndicators.push(winIndicator);
+        }
+    }
+
+    showDiceRoll(attackerDice, defenderDice) {
+        this.diceContainer.setVisible(true);
+
+        // Set up dice animation
+        const rollDuration = 1000; // 1 second for dice animation
+        const rollFrames = 10; // Number of "rolls" before settling
+
+        // Hide all dice initially
+        this.attackerDiceSprites.forEach(dice => dice.setVisible(false));
+        this.defenderDiceSprites.forEach(dice => dice.setVisible(false));
+        this.resultIndicators.forEach(indicator => indicator.setText(""));
+
+        // Show only the dice being used
+        for (let i = 0; i < attackerDice.length; i++) {
+            this.attackerDiceSprites[i].setVisible(true);
+        }
+
+        for (let i = 0; i < defenderDice.length; i++) {
+            this.defenderDiceSprites[i].setVisible(true);
+        }
+
+        // Animate dice rolling
+        let rollCount = 0;
+        const rollInterval = setInterval(() => {
+            rollCount++;
+
+            // Show random dice faces during roll animation
+            for (let i = 0; i < attackerDice.length; i++) {
+                const randomFace = Math.floor(Math.random() * 6);
+                this.attackerDiceSprites[i].setFrame(randomFace);
+            }
+
+            for (let i = 0; i < defenderDice.length; i++) {
+                const randomFace = Math.floor(Math.random() * 6);
+                this.defenderDiceSprites[i].setFrame(randomFace);
+            }
+
+            // On the last frame, show the actual results
+            if (rollCount >= rollFrames) {
+                clearInterval(rollInterval);
+                this.showDiceResults(attackerDice, defenderDice);
+            }
+        }, rollDuration / rollFrames);
+    }
+
+    showDiceResults(attackerDice, defenderDice) {
+        // Set the actual dice faces (dice values are 1-6, sprite frames are 0-5)
+        for (let i = 0; i < attackerDice.length; i++) {
+            this.attackerDiceSprites[i].setFrame(attackerDice[i] - 1);
+        }
+
+        for (let i = 0; i < defenderDice.length; i++) {
+            this.defenderDiceSprites[i].setFrame(defenderDice[i] - 1);
+        }
+
+        // Compare dice and show results
+        for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
+            if (attackerDice[i] > defenderDice[i]) {
+                // Attacker wins
+                this.resultIndicators[i].setText("→");
+                this.resultIndicators[i].setColor("#00FF00");
+                this.defenderDiceSprites[i].setTint(0xFF0000); // Red tint for loser
+            } else {
+                // Defender wins or ties
+                this.resultIndicators[i].setText("←");
+                this.resultIndicators[i].setColor("#FF0000");
+                this.attackerDiceSprites[i].setTint(0xFF0000); // Red tint for loser
+            }
+        }
+    }
+
+
+
+
+
+
+
 }
