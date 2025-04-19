@@ -18,7 +18,8 @@ const game = new Phaser.Game(config);
 window.gameVars = {
     players: [],
     currentPlayerIndex: 0,
-    gamePhase: "placement", // "placement", "attack", "fortify"
+    gamePhase: "initialPlacement", // "initialPlacement", "placement", "attack", "fortify"
     selectedTerritory: null,
-    targetTerritory: null
+    targetTerritory: null,
+    initialPlacementDone: false
 }

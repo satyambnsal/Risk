@@ -235,8 +235,9 @@ class GameScene extends Phaser.Scene {
     }
 
     startPlacementPhase() {
-        window.gameVars.gamePhase = "placement";
-        this.phaseText.setText("Phase: Initial placement");
+        window.gameVars.gamePhase = "initialPlacement";
+        window.gameVars.initialPlacementDone = false;
+        this.phaseText.setText("Phase: Initial Placement");
 
         // Calculate initial armies based on players
         const numPlayers = window.gameVars.players.length;
@@ -252,6 +253,10 @@ class GameScene extends Phaser.Scene {
 
         // Update display
         this.updateGameInfo();
+
+        // Disable end turn button during initial placement
+        this.endTurnButton.disableInteractive();
+        this.endTurnButton.setFillStyle(0x333333);
     }
 
     assignTerritories() {
@@ -296,20 +301,29 @@ class GameScene extends Phaser.Scene {
         this.playerText.setColor(this.hexNumToHexString(currentPlayer.color));
 
         // Update phase text
-        this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`);
+        if (window.gameVars.gamePhase === "initialPlacement") {
+            this.phaseText.setText("Phase: Initial Placement");
+        } else {
+            this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`);
+        }
 
         // Update end turn button text based on phase
-        if (window.gameVars.gamePhase === "attack") {
-            this.endTurnText.setText("Fortify Phase");
+        if (window.gameVars.gamePhase === "placement") {
+            this.endTurnText.setText("Start Attack Phase");
+        } else if (window.gameVars.gamePhase === "attack") {
+            this.endTurnText.setText("Start Fortify Phase");
         } else if (window.gameVars.gamePhase === "fortify") {
             this.endTurnText.setText("End Turn");
         } else {
-            this.endTurnText.setText("End Phase");
+            // Initial placement phase
+            this.endTurnText.setText("Please Place Armies");
         }
 
         // Update action text based on game phase
-        if (window.gameVars.gamePhase === "placement") {
-            this.actionText.setText(`Place your armies\nRemaining ${currentPlayer.reinforcements}`);
+        if (window.gameVars.gamePhase === "initialPlacement") {
+            this.actionText.setText(`Initial Placement\nPlayer ${window.gameVars.currentPlayerIndex + 1}'s turn\nRemaining: ${currentPlayer.reinforcements}`);
+        } else if (window.gameVars.gamePhase === "placement") {
+            this.actionText.setText(`Player ${window.gameVars.currentPlayerIndex + 1}'s turn\nPlace your reinforcements\nRemaining: ${currentPlayer.reinforcements}`);
         } else if (window.gameVars.gamePhase === "attack") {
             this.actionText.setText("Select your territory to attack from");
         } else if (window.gameVars.gamePhase === "fortify") {
@@ -327,9 +341,18 @@ class GameScene extends Phaser.Scene {
     }
 
     endTurn() {
-        if (window.gameVars.gamePhase === "attack") {
+        // Handle different phase transitions
+        if (window.gameVars.gamePhase === "placement") {
+            // From placement -> attack (same player)
+            window.gameVars.gamePhase = "attack";
+            this.updateGameInfo();
+            return;
+        }
+        else if (window.gameVars.gamePhase === "attack") {
+            // From attack -> fortify (same player)
             window.gameVars.gamePhase = "fortify";
 
+            // Reset selections
             if (window.gameVars.selectedTerritory) {
                 window.gameVars.selectedTerritory.setSelected(false);
             }
@@ -339,30 +362,33 @@ class GameScene extends Phaser.Scene {
             this.updateGameInfo();
             return;
         }
+        else if (window.gameVars.gamePhase === "fortify") {
+            // From fortify -> placement (next player)
 
-        // Move to the next player
-        window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
-        const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
+            // Move to the next player
+            window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
+            const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
-        // Reset selected territories
-        if (window.gameVars.selectedTerritory) {
-            window.gameVars.selectedTerritory.setSelected(false);
+            // Reset selected territories
+            if (window.gameVars.selectedTerritory) {
+                window.gameVars.selectedTerritory.setSelected(false);
+            }
+            window.gameVars.selectedTerritory = null;
+            window.gameVars.targetTerritory = null;
+
+            // Calculate reinforcements including continent bonuses for the new player
+            currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer);
+
+            // Move to placement phase for next player
+            window.gameVars.gamePhase = "placement";
+
+            // Update display
+            this.updateGameInfo();
+
+            // Disable end turn button until player places all armies
+            this.endTurnButton.disableInteractive();
+            this.endTurnButton.setFillStyle(0x333333);
         }
-        window.gameVars.selectedTerritory = null;
-        window.gameVars.targetTerritory = null;
-
-        // Calculate reinforcements including continent bonuses
-        currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer);
-
-        // Move to reinforcement phase 
-        window.gameVars.gamePhase = "placement";
-
-        // Update display
-        this.updateGameInfo();
-
-        // Disable end turn button during placement
-        this.endTurnButton.disableInteractive();
-        this.endTurnButton.setFillStyle(0x333333);
     }
 
     calculateReinforcements(player) {
@@ -388,24 +414,66 @@ class GameScene extends Phaser.Scene {
     handleTerritoryClick(territory) {
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
-        if (window.gameVars.gamePhase === "placement") {
+        // INITIAL PLACEMENT PHASE
+        if (window.gameVars.gamePhase === "initialPlacement") {
             if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
                 // Place an army
                 territory.addArmies(1);
                 currentPlayer.reinforcements--;
                 this.updateGameInfo();
 
-                // If all reinforcements placed, move to attack phase
+                // If current player has placed all armies, move to next player
                 if (currentPlayer.reinforcements === 0) {
-                    window.gameVars.gamePhase = "attack";
-                    this.updateGameInfo();
+                    // Move to the next player
+                    window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
 
-                    // Enable end turn button
-                    this.endTurnButton.setInteractive();
-                    this.endTurnButton.setFillStyle(0x444444);
+                    // Check if all players have placed their initial armies
+                    let allPlaced = true;
+                    for (let player of window.gameVars.players) {
+                        if (player.reinforcements > 0) {
+                            allPlaced = false;
+                            break;
+                        }
+                    }
+
+                    // If all players have placed their armies, start regular game flow
+                    if (allPlaced) {
+                        window.gameVars.initialPlacementDone = true;
+                        window.gameVars.gamePhase = "placement";
+
+                        // Reset to first player and give reinforcements
+                        window.gameVars.currentPlayerIndex = 0;
+                        const firstPlayer = window.gameVars.players[0];
+                        firstPlayer.reinforcements = this.calculateReinforcements(firstPlayer);
+
+                        // Enable end phase button
+                        this.endTurnButton.setInteractive();
+                        this.endTurnButton.setFillStyle(0x444444);
+                    }
+
+                    this.updateGameInfo();
                 }
             }
-        } else if (window.gameVars.gamePhase === "attack") {
+        }
+        // REGULAR PLACEMENT PHASE
+        else if (window.gameVars.gamePhase === "placement") {
+            if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
+                // Place an army
+                territory.addArmies(1);
+                currentPlayer.reinforcements--;
+                this.updateGameInfo();
+
+                // If all reinforcements placed, enable the end phase button
+                if (currentPlayer.reinforcements === 0) {
+                    // Enable end turn button - player can now move to attack phase
+                    this.endTurnButton.setInteractive();
+                    this.endTurnButton.setFillStyle(0x444444);
+                    this.updateGameInfo();
+                }
+            }
+        }
+        // ATTACK PHASE
+        else if (window.gameVars.gamePhase === "attack") {
             if (window.gameVars.selectedTerritory === null) {
                 // selecting the attacking territory
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
@@ -433,7 +501,9 @@ class GameScene extends Phaser.Scene {
                     this.actionText.setText("Invalid target. Select your territory to attack from");
                 }
             }
-        } else if (window.gameVars.gamePhase === "fortify") {
+        }
+        // FORTIFY PHASE
+        else if (window.gameVars.gamePhase === "fortify") {
             if (window.gameVars.selectedTerritory === null) {
                 // Selecting the source territory
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
