@@ -92,7 +92,8 @@ class MainMenuScene extends Phaser.Scene {
                 color: colors[i],
                 armies: 0,
                 territories: [],
-                reinforcements: 0
+                reinforcements: 0,
+                eliminated: false
             })
         }
 

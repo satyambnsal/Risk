@@ -296,6 +296,12 @@ class GameScene extends Phaser.Scene {
     updateGameInfo() {
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
+        if (currentPlayer.eliminated) {
+            // Skip to next player if current one is eliminated
+            this.endTurn();
+            return;
+        }
+
         // Update player text with color
         this.playerText.setText(`Player: ${window.gameVars.currentPlayerIndex + 1}`);
         this.playerText.setColor(this.hexNumToHexString(currentPlayer.color));
@@ -363,18 +369,39 @@ class GameScene extends Phaser.Scene {
             return;
         }
         else if (window.gameVars.gamePhase === "fortify") {
-            // From fortify -> placement (next player)
-
-            // Move to the next player
-            window.gameVars.currentPlayerIndex = (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length;
-            const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
-
             // Reset selected territories
             if (window.gameVars.selectedTerritory) {
                 window.gameVars.selectedTerritory.setSelected(false);
             }
             window.gameVars.selectedTerritory = null;
             window.gameVars.targetTerritory = null;
+
+            // Find the next active player (not eliminated)
+            let nextPlayerFound = false;
+            let nextPlayerIndex = window.gameVars.currentPlayerIndex;
+            const playerCount = window.gameVars.players.length;
+
+            for (let i = 1; i <= playerCount; i++) {
+                // Calculate next player index with wrapping
+                nextPlayerIndex = (window.gameVars.currentPlayerIndex + i) % playerCount;
+
+                // Check if this player is still in the game
+                if (!window.gameVars.players[nextPlayerIndex].eliminated) {
+                    nextPlayerFound = true;
+                    break;
+                }
+            }
+
+            // If no active players found besides current one, game is over
+            if (!nextPlayerFound) {
+                // Current player wins!
+                this.gameOver(window.gameVars.currentPlayerIndex);
+                return;
+            }
+
+            // Move to the next active player
+            window.gameVars.currentPlayerIndex = nextPlayerIndex;
+            const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
 
             // Calculate reinforcements including continent bonuses for the new player
             currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer);
@@ -390,6 +417,7 @@ class GameScene extends Phaser.Scene {
             this.endTurnButton.setFillStyle(0x333333);
         }
     }
+
 
     calculateReinforcements(player) {
         // Base reinforcements from territories
@@ -622,7 +650,14 @@ class GameScene extends Phaser.Scene {
         attacker.setArmies(1);
 
         this.actionText.setText(`You captured ${defender.name}!`);
+
+        // Check if the defender player has been eliminated
+        if (defenderPlayer.territories.length === 0) {
+            defenderPlayer.eliminated = true;
+            this.showPlayerEliminationMessage(defenderPlayer.id);
+        }
     }
+
 
     fortifyTerritory() {
         const source = window.gameVars.selectedTerritory;
@@ -645,7 +680,22 @@ class GameScene extends Phaser.Scene {
     }
 
     checkGameOver() {
-        // Check if any player has conquered all territories
+        let activePlayers = 0;
+        let lastActivePlayerIndex = -1;
+
+        window.gameVars.players.forEach((player, index) => {
+            if (!player.eliminated) {
+                activePlayers++;
+                lastActivePlayerIndex = index;
+            }
+        });
+
+        // If only one player remains, they win
+        if (activePlayers === 1) {
+            this.gameOver(lastActivePlayerIndex);
+        }
+
+        // Also check if any player has conquered all territories
         window.gameVars.players.forEach((player, index) => {
             if (player.territories.length === this.territories.length) {
                 this.gameOver(index);
@@ -655,23 +705,23 @@ class GameScene extends Phaser.Scene {
 
     gameOver(winnerIndex) {
         // Display game over message
-        this.add.rectangle(600, 400, 600, 300, 0x000000, 0.8);
+        this.add.rectangle(600, 400, 600, 300, 0x000000, 0.8).setDepth(1000);
         this.add.text(600, 350, "GAME OVER", {
             fontSize: "48px",
             fill: "#FFF"
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(1000);
 
         this.add.text(600, 425, `Player ${winnerIndex + 1} Wins!`, {
             fontSize: "32px",
             fill: this.hexNumToHexString(window.gameVars.players[winnerIndex].color)
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(1000);
 
         // Add restart button
         const restartButton = this.add.rectangle(600, 500, 200, 50, 0x444444).setInteractive();
         this.add.text(600, 500, "Play Again", {
             fontSize: "24px",
             fill: "#FFF"
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(1000);
 
         restartButton.on("pointerdown", () => {
             this.scene.start("MainMenuScene");
@@ -802,6 +852,48 @@ class GameScene extends Phaser.Scene {
             }
         }
     }
+
+
+    showPlayerEliminationMessage(playerId) {
+        const messageBox = this.add.container(600, 400);
+
+        const bg = this.add.rectangle(0, 0, 400, 200, 0x000000, 0.8);
+        messageBox.add(bg);
+
+        const message = this.add.text(0, -30, `Player ${playerId + 1} Eliminated!`, {
+            fontSize: '28px',
+            fill: this.hexNumToHexString(window.gameVars.players[playerId].color),
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        messageBox.add(message);
+
+        const subtext = this.add.text(0, 10, 'Lost all territories and is out of the game', {
+            fontSize: '18px',
+            fill: '#FFFFFF'
+        }).setOrigin(0.5);
+        messageBox.add(subtext);
+
+        const continueButton = this.add.rectangle(0, 60, 160, 40, 0x444444).setInteractive();
+        const buttonText = this.add.text(0, 60, 'Continue', {
+            fontSize: '18px',
+            fill: '#FFFFFF'
+        }).setOrigin(0.5);
+
+        messageBox.add(continueButton);
+        messageBox.add(buttonText);
+
+        continueButton.on('pointerover', () => continueButton.setFillStyle(0x666666));
+        continueButton.on('pointerout', () => continueButton.setFillStyle(0x444444));
+        continueButton.on('pointerdown', () => {
+            messageBox.destroy();
+            // Resume game flow
+            this.updateGameInfo();
+        });
+
+        messageBox.setDepth(1000);
+    }
+
+
 
 
 
