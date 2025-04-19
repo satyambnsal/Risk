@@ -721,12 +721,12 @@ class GameScene extends Phaser.Scene {
         for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
             if (attackerDice[i] > defenderDice[i]) {
                 // Attacker wins
-                this.resultIndicators[i].setText("→");
+                this.resultIndicators[i].setText(">");
                 this.resultIndicators[i].setColor("#00FF00");
                 this.defenderDiceSprites[i].setTint(0xFF0000); // Red tint for loser
             } else {
                 // Defender wins or ties
-                this.resultIndicators[i].setText("←");
+                this.resultIndicators[i].setText("<");
                 this.resultIndicators[i].setColor("#FF0000");
                 this.attackerDiceSprites[i].setTint(0xFF0000); // Red tint for loser
             }
