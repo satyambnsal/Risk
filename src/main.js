@@ -4,6 +4,10 @@ const config = {
     height: 800,
     parent: "game-container",
     scene: [BootScene, MainMenuScene, GameScene],
+    scale: {
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        mode: Phaser.Scale.FIT,
+    },
     physics: {
         default: "arcade",
         arcade: {
