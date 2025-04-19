@@ -68,7 +68,7 @@ const adjacencyMapData = {
     20: [4, 11, 13, 21, 22],// AU-1 connects to EU-1, AF-2, AF-3, AU-2, AU-3
     21: [12, 13, 20, 22, 23, 24], // AU-2 connects to AF-3, AF-4,  AU-1, AU-3, AU-4, AU-5
     22: [20, 21, 23],   // AU-3 connects to AU-1, AU-2, AU-4
-    23: [20, 21, 22],       // AU-4 connects to AU-1, AU-2, AU-3
+    23: [21, 22, 24],       // AU-4 connects to  AU-2, AU-3, AU-5
     24: [19, 21, 23]        // AU-5 connects to SA-5, AU-2, AU-4
 };
 
