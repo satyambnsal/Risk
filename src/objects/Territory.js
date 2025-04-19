@@ -3,7 +3,7 @@ class Territory {
         this.scene = scene;
         this.id = id;
         this.name = name;
-        this.owner = null; // Player ID who owns this territory
+        this.owner = null;
         this.armies = 0;
         this.isSelected = false;
         this.continent = continent;
@@ -11,6 +11,7 @@ class Territory {
         // Visual elements - using the neutral version of this specific territory
         //TODO: right now we also don't have any image for the the neutral but it's not compulsory to add
         this.territoryImage = scene.add.image(x, y, `territory-${id}-neutral`);
+        this.territoryImage.setScale(0.6)
         this.territoryImage.setInteractive();
 
         this.territoryImage.on('pointerdown', () => {
@@ -28,7 +29,7 @@ class Territory {
                 this.territoryImage.clearTint();
             }
         });
-        // TODO: fix name positions
+
         this.nameText = scene.add.text(x - 10, y - 15, name, {
             fontSize: '12px',
             fill: '#FFF',
@@ -36,7 +37,6 @@ class Territory {
             strokeThickness: 3
         }).setOrigin(0.5);
 
-        // Text for armies count
         this.armiesText = scene.add.text(x, y, '0', {
             fontSize: '16px',
             fill: '#FFF',
@@ -46,6 +46,8 @@ class Territory {
         }).setOrigin(0.5);
     }
 
+
+
     setOwner(player) {
         this.owner = player.id;
         //TODO: We are not using cyan color, so right now it will show broken image if user choose 6 players
@@ -54,7 +56,6 @@ class Territory {
 
         // Each territory has its own unique image for each color
         this.territoryImage.setTexture(`territory-${this.id}-${colorName}`);
-        this.territoryImage.setScale(0.6)
     }
 
     setArmies(count) {

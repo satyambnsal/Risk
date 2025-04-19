@@ -25,7 +25,7 @@ const territoriesData = [
     { id: 16, name: 'SA-2', x: 140, y: 416, continent: 'South America' },
     { id: 17, name: 'SA-3', x: 199, y: 427, continent: 'South America' },
     { id: 18, name: 'SA-4', x: 155, y: 504, continent: 'South America' },
-    { id: 19, name: 'SA-5', x: 239, y: 490, continent: 'South America' },
+    { id: 19, name: 'SA-5', x: 241, y: 494, continent: 'South America' },
 
     // Australia (Purple) - 5 territories
     { id: 20, name: 'AU-1', x: 510, y: 345, continent: 'Australia' },
@@ -161,7 +161,7 @@ class GameScene extends Phaser.Scene {
 
     setupGameInfo() {
         // Background for game info
-        this.add.rectangle(950, 400, 300, 750, 0x222222);
+        this.add.rectangle(950, 400, 340, 750, 0x222222);
 
         // Game phase text
         this.phaseText = this.add.text(950, 100, "Phase: Placement", {
@@ -211,7 +211,7 @@ class GameScene extends Phaser.Scene {
 
     setupButtons() {
         // End turn button
-        this.endTurnButton = this.add.rectangle(950, 700, 200, 40, 0x444444).setInteractive();
+        this.endTurnButton = this.add.rectangle(950, 700, 240, 40, 0x444444).setInteractive();
         this.endTurnText = this.add.text(950, 700, "End Phase", {
             fontSize: "18px",
             fill: "#FFF"
