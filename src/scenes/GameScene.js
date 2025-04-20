@@ -777,21 +777,20 @@ class GameScene extends Phaser.Scene {
         const source = window.gameVars.selectedTerritory;
         const destination = window.gameVars.targetTerritory;
 
-        // Move armies (right now just moving half of armies)
-        const armiesToMove = Math.floor((source.armies - 1) / 2);
-        if (armiesToMove > 0) {
-            source.removeArmies(armiesToMove);
-            destination.addArmies(armiesToMove);
-            this.actionText.setText(`Moved ${armiesToMove} armies from ${source.name} to ${destination.name}`);
-        } else {
+        if (source.armies <= 1) {
             this.actionText.setText("Not enough armies to fortify");
+
+            // Reset selections
+            source.setSelected(false);
+            window.gameVars.selectedTerritory = null;
+            window.gameVars.targetTerritory = null;
+            return;
         }
 
-        // Reset selections
-        source.setSelected(false);
-        window.gameVars.selectedTerritory = null;
-        window.gameVars.targetTerritory = null;
+        // Show the army selection UI
+        this.createArmySelectionUI(source, destination);
     }
+
 
     checkGameOver() {
         let activePlayers = 0;
@@ -1338,8 +1337,319 @@ class GameScene extends Phaser.Scene {
     }
 
 
+    createArmySelectionUI(source, destination) {
+        // Background panel with semi-transparent background
+        const panel = this.add.rectangle(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            400,
+            300,
+            0x222222,
+            0.9
+        ).setOrigin(0.5).setStrokeStyle(2, 0xffffff).setDepth(1000);
 
+        // Title
+        const title = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 - 100,
+            "Select Armies to Move",
+            {
+                fontSize: '24px',
+                fill: '#FFF',
+                fontStyle: 'bold'
+            }
+        ).setOrigin(0.5).setDepth(1000);
 
+        // Territory info
+        const infoText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 - 60,
+            `From ${source.name} (${source.armies} armies) to ${destination.name} (${destination.armies} armies)`,
+            {
+                fontSize: '16px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Calculate max armies that can be moved (leaving at least 1 behind)
+        const maxArmies = source.armies - 1;
+        let currentArmies = Math.floor(maxArmies / 2); // Default to half, rounding down
+
+        // Current selection text
+        const selectionText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            `Armies to move: ${currentArmies}`,
+            {
+                fontSize: '20px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Create minus button
+        const minusButton = this.add.rectangle(
+            this.cameras.main.width / 2 - 150,
+            this.cameras.main.height / 2,
+            40,
+            40,
+            0x444444
+        ).setOrigin(0.5).setInteractive().setDepth(1000);
+
+        const minusText = this.add.text(
+            this.cameras.main.width / 2 - 150,
+            this.cameras.main.height / 2,
+            "-",
+            {
+                fontSize: '24px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Create plus button
+        const plusButton = this.add.rectangle(
+            this.cameras.main.width / 2 + 150,
+            this.cameras.main.height / 2,
+            40,
+            40,
+            0x444444
+        ).setOrigin(0.5).setInteractive().setDepth(1000);
+
+        const plusText = this.add.text(
+            this.cameras.main.width / 2 + 150,
+            this.cameras.main.height / 2,
+            "+",
+            {
+                fontSize: '24px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Create slider background
+        const sliderBg = this.add.rectangle(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 + 50,
+            200,
+            20,
+            0x555555
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Create slider handle
+        const sliderHandle = this.add.rectangle(
+            this.cameras.main.width / 2 - 100 + (200 * (currentArmies / maxArmies)),
+            this.cameras.main.height / 2 + 50,
+            20,
+            30,
+            0xffffff
+        ).setOrigin(0.5).setInteractive().setDepth(1000);
+        sliderHandle.setData('value', currentArmies);
+
+        // Make slider handle draggable
+        this.input.setDraggable(sliderHandle);
+
+        // Max and Min labels for slider
+        const minLabel = this.add.text(
+            this.cameras.main.width / 2 - 110,
+            this.cameras.main.height / 2 + 50,
+            "1",
+            { fontSize: '14px', fill: '#FFF' }
+        ).setOrigin(1, 0.5).setDepth(1000);
+
+        const maxLabel = this.add.text(
+            this.cameras.main.width / 2 + 110,
+            this.cameras.main.height / 2 + 50,
+            maxArmies.toString(),
+            { fontSize: '14px', fill: '#FFF' }
+        ).setOrigin(0, 0.5).setDepth(1000);
+
+        // Create confirm button
+        const confirmButton = this.add.rectangle(
+            this.cameras.main.width / 2 - 80,
+            this.cameras.main.height / 2 + 100,
+            120,
+            40,
+            0x33AA33
+        ).setOrigin(0.5).setInteractive().setDepth(1000);
+
+        const confirmText = this.add.text(
+            this.cameras.main.width / 2 - 80,
+            this.cameras.main.height / 2 + 100,
+            "Confirm",
+            {
+                fontSize: '18px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Create cancel button
+        const cancelButton = this.add.rectangle(
+            this.cameras.main.width / 2 + 80,
+            this.cameras.main.height / 2 + 100,
+            120,
+            40,
+            0xAA3333
+        ).setOrigin(0.5).setInteractive().setDepth(1000);
+
+        const cancelText = this.add.text(
+            this.cameras.main.width / 2 + 80,
+            this.cameras.main.height / 2 + 100,
+            "Cancel",
+            {
+                fontSize: '18px',
+                fill: '#FFF'
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Group all UI elements for easy cleanup
+        const uiElements = [
+            panel, title, infoText, selectionText,
+            minusButton, minusText, plusButton, plusText,
+            sliderBg, sliderHandle, minLabel, maxLabel,
+            confirmButton, confirmText, cancelButton, cancelText
+        ];
+
+        // Function to update the display
+        const updateArmySelection = (value) => {
+            // Constrain to valid range (1 to maxArmies)
+            const armiesValue = Math.min(Math.max(1, Math.round(value)), maxArmies);
+            currentArmies = armiesValue;
+
+            // Update text
+            selectionText.setText(`Armies to move: ${armiesValue}`);
+
+            // Update slider position
+            const newX = this.cameras.main.width / 2 - 100 + (200 * (armiesValue / maxArmies));
+            sliderHandle.x = newX;
+        };
+
+        // Minus button click
+        minusButton.on('pointerdown', () => {
+            if (currentArmies > 1) {
+                updateArmySelection(currentArmies - 1);
+            }
+        });
+
+        // Add hover effects for minus button
+        minusButton.on('pointerover', () => {
+            minusButton.setFillStyle(0x666666);
+        });
+        minusButton.on('pointerout', () => {
+            minusButton.setFillStyle(0x444444);
+        });
+
+        // Plus button click
+        plusButton.on('pointerdown', () => {
+            if (currentArmies < maxArmies) {
+                updateArmySelection(currentArmies + 1);
+            }
+        });
+
+        // Add hover effects for plus button
+        plusButton.on('pointerover', () => {
+            plusButton.setFillStyle(0x666666);
+        });
+        plusButton.on('pointerout', () => {
+            plusButton.setFillStyle(0x444444);
+        });
+
+        // Slider drag
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            if (gameObject === sliderHandle) {
+                // Constrain x position to slider bounds
+                const minX = this.cameras.main.width / 2 - 100;
+                const maxX = this.cameras.main.width / 2 + 100;
+                const newX = Math.min(Math.max(dragX, minX), maxX);
+
+                // Update position
+                gameObject.x = newX;
+
+                // Calculate value based on position
+                const percentage = (newX - minX) / (maxX - minX);
+                const value = Math.max(1, Math.min(Math.round(percentage * maxArmies), maxArmies));
+
+                // Update display
+                updateArmySelection(value);
+            }
+        });
+
+        // Cancel drag when pointer is released
+        this.input.on('dragend', () => {
+            // This ensures we don't keep dragging after release
+        });
+
+        // Confirm button hover effects
+        confirmButton.on('pointerover', () => {
+            confirmButton.setFillStyle(0x44CC44);
+        });
+        confirmButton.on('pointerout', () => {
+            confirmButton.setFillStyle(0x33AA33);
+        });
+
+        // Cancel button hover effects
+        cancelButton.on('pointerover', () => {
+            cancelButton.setFillStyle(0xCC4444);
+        });
+        cancelButton.on('pointerout', () => {
+            cancelButton.setFillStyle(0xAA3333);
+        });
+
+        // Confirm button click - move the armies
+        confirmButton.on('pointerdown', () => {
+            // Create button press animation
+            this.tweens.add({
+                targets: confirmButton,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 50,
+                yoyo: true,
+                ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    // Move the armies
+                    source.removeArmies(currentArmies);
+                    destination.addArmies(currentArmies);
+                    this.actionText.setText(`Moved ${currentArmies} armies from ${source.name} to ${destination.name}`);
+
+                    // Clean up UI and event listeners
+                    this.input.off('drag');
+                    this.input.off('dragend');
+                    uiElements.forEach(element => element.destroy());
+
+                    // Reset selections
+                    source.setSelected(false);
+                    window.gameVars.selectedTerritory = null;
+                    window.gameVars.targetTerritory = null;
+                }
+            });
+        });
+
+        // Cancel button click
+        cancelButton.on('pointerdown', () => {
+            // Create button press animation
+            this.tweens.add({
+                targets: cancelButton,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 50,
+                yoyo: true,
+                ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    // Clean up UI and event listeners
+                    this.input.off('drag');
+                    this.input.off('dragend');
+                    uiElements.forEach(element => element.destroy());
+
+                    // Reset selections
+                    source.setSelected(false);
+                    window.gameVars.selectedTerritory = null;
+                    window.gameVars.targetTerritory = null;
+
+                    this.actionText.setText("Fortify canceled");
+                }
+            });
+        });
+
+        // Initial setup - start with current value
+        updateArmySelection(currentArmies);
+    }
 
 
 
