@@ -107,122 +107,14 @@ class Territory {
     }
 
     addArmies(count) {
-        const previousCount = this.armies;
         this.armies += count;
-
-        this.armiesText.setText(this.armies.toString());
-
-        // Flash effect for the armies counter
-        this.scene.tweens.add({
-            targets: this.armiesText,
-            scale: 1.5,
-            duration: 200,
-            yoyo: true,
-            ease: 'Sine.easeOut'
-        });
-
-        // If this is a significant addition, add a "+" indicator animation
-        if (count > 0) {
-            const plusText = this.scene.add.text(
-                this.territoryImage.x + 20,
-                this.territoryImage.y - 20,
-                "+" + count,
-                {
-                    fontSize: '18px',
-                    fontStyle: 'bold',
-                    fill: '#FFFFFF',
-                    stroke: '#000000',
-                    strokeThickness: 3
-                }
-            ).setOrigin(0.5)
-                .setDepth(1000);
-
-            // Animate the plus text
-            this.scene.tweens.add({
-                targets: plusText,
-                y: this.territoryImage.y - 200,
-                alpha: 0,
-                duration: 1600,
-                ease: 'Power2',
-                onComplete: () => {
-                    plusText.destroy();
-                }
-            });
-        }
-
-        // Create a pulsing effect on the territory itself
-        this.scene.tweens.add({
-            targets: this.territoryImage,
-            scale: this.originalScale * 1.1,
-            duration: 100,
-            yoyo: true,
-            repeat: 1,
-            ease: 'Sine.easeInOut'
-        });
+        this.updateArmiesWithAnimation(count);
     }
-
-
 
     removeArmies(count) {
         const previousCount = this.armies;
         this.armies = Math.max(0, this.armies - count);
-
-        // Update the text
-        this.armiesText.setText(this.armies.toString());
-
-        // Flash red for army loss
-        this.armiesText.setTint(0xFF0000);
-
-        this.scene.tweens.add({
-            targets: this.armiesText,
-            scale: 1.3,
-            duration: 200,
-            yoyo: true,
-            ease: 'Sine.easeInOut',
-            onComplete: () => {
-                // Reset tint after animation
-                this.armiesText.clearTint();
-            }
-        });
-
-        // If loss is significant, show a "-" indicator
-        if (count > 0) {
-            const minusText = this.scene.add.text(
-                this.territoryImage.x + 20,
-                this.territoryImage.y - 20,
-                "-" + count,
-                {
-                    fontSize: '18px',
-                    fontStyle: 'bold',
-                    fill: '#FF0000',
-                    stroke: '#000000',
-                    strokeThickness: 3
-                }
-            ).setOrigin(0.5);
-
-            // Animate the minus text
-            this.scene.tweens.add({
-                targets: minusText,
-                y: this.territoryImage.y - 200,
-                alpha: 0,
-                duration: 1600,
-                ease: 'Power2',
-                onComplete: () => {
-                    minusText.destroy();
-                }
-            });
-        }
-
-
-        // Small shake animation to indicate damage
-        this.scene.tweens.add({
-            targets: this.territoryImage,
-            x: this.territoryImage.x + 3,
-            duration: 50,
-            yoyo: true,
-            repeat: 2,
-            ease: 'Sine.easeInOut'
-        });
+        this.updateArmiesWithAnimation(-count);
     }
 
 
@@ -269,6 +161,90 @@ class Territory {
 
             this.nameText.setScale(1);
             this.armiesText.setScale(1);
+        }
+    }
+
+    updateArmiesWithAnimation(count) {
+        // Update the text display
+        this.armiesText.setText(this.armies.toString());
+
+        // Flash effect for the armies counter
+        this.scene.tweens.add({
+            targets: this.armiesText,
+            scale: 1.5,
+            duration: 200,
+            yoyo: true,
+            ease: 'Sine.easeOut'
+        });
+
+        // If this is a change, add an indicator animation
+        if (count !== 0) {
+            // Set the sign and color based on whether we're adding or removing
+            const sign = count > 0 ? "+" : "-";
+            const color = count > 0 ? '#FFFFFF' : '#FF0000';
+
+            const changeText = this.scene.add.text(
+                this.territoryImage.x + 20,
+                this.territoryImage.y - 20,
+                sign + Math.abs(count),
+                {
+                    fontSize: '18px',
+                    fontStyle: 'bold',
+                    fill: color,
+                    stroke: '#000000',
+                    strokeThickness: 3
+                }
+            ).setOrigin(0.5).setDepth(1000);
+
+            // Animate the text
+            this.scene.tweens.add({
+                targets: changeText,
+                y: this.territoryImage.y - 200,
+                alpha: 0,
+                duration: 1600,
+                ease: 'Power2',
+                onComplete: () => {
+                    changeText.destroy();
+                }
+            });
+        }
+
+        // Create a territory animation - different based on adding vs removing
+        if (count > 0) {
+            // Pulsing effect for adding armies
+            this.scene.tweens.add({
+                targets: this.territoryImage,
+                scale: this.originalScale * 1.1,
+                duration: 100,
+                yoyo: true,
+                repeat: 1,
+                ease: 'Sine.easeInOut'
+            });
+        } else if (count < 0) {
+            // Set red tint for army loss
+            this.armiesText.setTint(0xFF0000);
+
+            this.scene.tweens.add({
+                targets: this.armiesText,
+                scale: 1.3,
+                duration: 200,
+                yoyo: true,
+                ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    // Reset tint after animation
+                    this.armiesText.clearTint();
+                }
+            });
+
+            // Shake animation for damage
+            this.scene.tweens.add({
+                targets: this.territoryImage,
+                x: this.territoryImage.x + 3,
+                duration: 50,
+                yoyo: true,
+                repeat: 2,
+                ease: 'Sine.easeInOut'
+            });
         }
     }
 }
