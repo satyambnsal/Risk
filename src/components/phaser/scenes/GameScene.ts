@@ -1635,7 +1635,7 @@ export class GameScene extends Phaser.Scene {
   showPlayerEliminationMessage(playerId: number) {
     const messageBox = this.add.container(600, 400)
 
-    const bg = this.add.rectangle(0, 0, 400, 200, 0x000000, 0.8)
+    const bg = this.add.rectangle(0, 0, 600, 300, 0x000000, 0.8)
     messageBox.add(bg)
 
     const message = this.add
