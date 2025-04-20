@@ -122,33 +122,33 @@ class Territory {
         });
 
         // If this is a significant addition, add a "+" indicator animation
-        // if (count > 1) {
-        const plusText = this.scene.add.text(
-            this.territoryImage.x + 20,
-            this.territoryImage.y - 20,
-            "+" + count,
-            {
-                fontSize: '18px',
-                fontStyle: 'bold',
-                fill: '#FFFFFF',
-                stroke: '#000000',
-                strokeThickness: 3
-            }
-        ).setOrigin(0.5)
-            .setDepth(1000);
+        if (count > 0) {
+            const plusText = this.scene.add.text(
+                this.territoryImage.x + 20,
+                this.territoryImage.y - 20,
+                "+" + count,
+                {
+                    fontSize: '18px',
+                    fontStyle: 'bold',
+                    fill: '#FFFFFF',
+                    stroke: '#000000',
+                    strokeThickness: 3
+                }
+            ).setOrigin(0.5)
+                .setDepth(1000);
 
-        // Animate the plus text
-        this.scene.tweens.add({
-            targets: plusText,
-            y: this.territoryImage.y - 200,
-            alpha: 0,
-            duration: 1600,
-            ease: 'Power2',
-            onComplete: () => {
-                plusText.destroy();
-            }
-        });
-        // }
+            // Animate the plus text
+            this.scene.tweens.add({
+                targets: plusText,
+                y: this.territoryImage.y - 200,
+                alpha: 0,
+                duration: 1600,
+                ease: 'Power2',
+                onComplete: () => {
+                    plusText.destroy();
+                }
+            });
+        }
 
         // Create a pulsing effect on the territory itself
         this.scene.tweens.add({
@@ -186,7 +186,7 @@ class Territory {
         });
 
         // If loss is significant, show a "-" indicator
-        if (count > 1) {
+        if (count > 0) {
             const minusText = this.scene.add.text(
                 this.territoryImage.x + 20,
                 this.territoryImage.y - 20,
@@ -203,15 +203,16 @@ class Territory {
             // Animate the minus text
             this.scene.tweens.add({
                 targets: minusText,
-                y: this.territoryImage.y - 50,
+                y: this.territoryImage.y - 200,
                 alpha: 0,
-                duration: 800,
+                duration: 1600,
                 ease: 'Power2',
                 onComplete: () => {
                     minusText.destroy();
                 }
             });
         }
+
 
         // Small shake animation to indicate damage
         this.scene.tweens.add({
