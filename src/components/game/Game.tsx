@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import * as Phaser from 'phaser'
 
 export default function Game() {
   const gameRef = useRef<HTMLDivElement>(null)
-  const gameInstanceRef = useRef<any>(null)
+  const gameInstanceRef = useRef<Phaser.Game | null>(null)
 
   useEffect(() => {
     // Dynamically import Phaser and the game module
