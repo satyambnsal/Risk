@@ -1,8 +1,8 @@
 import * as Phaser from 'phaser'
-import { Player } from '../types'
+import { Player, TerritoryHandler } from '../types'
 
 export class Territory {
-  public scene: Phaser.Scene
+  public scene: Phaser.Scene & TerritoryHandler
   public id: number
   public name: string
   public owner: number | null
@@ -16,7 +16,7 @@ export class Territory {
   private hoverTween: Phaser.Tweens.Tween | null
 
   constructor(
-    scene: Phaser.Scene,
+    scene: Phaser.Scene & TerritoryHandler,
     x: number,
     y: number,
     name: string,
@@ -40,8 +40,7 @@ export class Territory {
     this.territoryImage.setDepth(1)
 
     this.territoryImage.on('pointerdown', () => {
-      // Cast the scene to access the handleTerritoryClick method
-      ;(scene as any).handleTerritoryClick(this)
+      this.scene.handleTerritoryClick(this)
     })
 
     this.territoryImage.on('pointerover', () => {
@@ -97,7 +96,7 @@ export class Territory {
     this.nameText = scene.add
       .text(x - 10, y - 15, name, {
         fontSize: '12px',
-        fill: '#FFF',
+        color: '#FFF',
         stroke: '#000',
         strokeThickness: 3,
       })
@@ -107,7 +106,7 @@ export class Territory {
     this.armiesText = scene.add
       .text(x, y, '0', {
         fontSize: '16px',
-        fill: '#FFF',
+        color: '#FFF',
         fontStyle: 'bold',
         stroke: '#000',
         strokeThickness: 3,

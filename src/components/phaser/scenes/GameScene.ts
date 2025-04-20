@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { Territory } from '../objects/Territory'
-import { TerritoryData, ContinentData, Player } from '../types'
+import { TerritoryData, ContinentData, Player, TerritoryHandler } from '../types'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -87,7 +87,7 @@ const continentsData: Record<string, ContinentData> = {
   Australia: { territories: [20, 21, 22, 23, 24], bonus: 2 },
 }
 
-export class GameScene extends Phaser.Scene {
+export class GameScene extends Phaser.Scene implements TerritoryHandler {
   private territories: Territory[] = []
   private adjacencyMap: Record<number, number[]>
   private phaseText!: Phaser.GameObjects.Text

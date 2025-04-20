@@ -13,6 +13,9 @@ export interface Territory {
   removeArmies(count: number): void
   setArmies(count: number): void
 }
+export interface TerritoryHandler {
+  handleTerritoryClick(territory: Territory): void
+}
 
 export interface Player {
   id: number
