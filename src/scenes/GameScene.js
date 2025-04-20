@@ -98,6 +98,9 @@ class GameScene extends Phaser.Scene {
         // Add a dark background
         this.add.rectangle(600, 400, 1200, 800, 0x000000).setOrigin(0.5);
 
+        // Start with camera faded out, then fade in
+        this.cameras.main.fadeIn(800, 0, 0, 0);
+
         // Create territories
         this.createTerritories();
 
@@ -218,21 +221,60 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         this.endTurnButton.on('pointerdown', () => {
-            this.endTurn();
+            // Add button press animation
+            this.tweens.add({
+                targets: this.endTurnButton,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 50,
+                yoyo: true,
+                ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    this.endTurn();
+                }
+            });
         });
 
         this.endTurnButton.on("pointerover", () => {
             this.endTurnButton.setFillStyle(0x666666);
+
+            // Add hover scale animation
+            this.tweens.add({
+                targets: this.endTurnButton,
+                scaleX: 1.05,
+                scaleY: 1.05,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
+
+            // Also scale the text
+            this.tweens.add({
+                targets: this.endTurnText,
+                scaleX: 1.05,
+                scaleY: 1.05,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
         });
 
         this.endTurnButton.on("pointerout", () => {
             this.endTurnButton.setFillStyle(0x444444);
+
+            // Reset scale on hover out
+            this.tweens.add({
+                targets: [this.endTurnButton, this.endTurnText],
+                scaleX: 1,
+                scaleY: 1,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
         });
 
         // Initially disable end turn button during placement
         this.endTurnButton.disableInteractive();
         this.endTurnButton.setFillStyle(0x333333);
     }
+
 
     startPlacementPhase() {
         window.gameVars.gamePhase = "initialPlacement";
@@ -269,8 +311,46 @@ class GameScene extends Phaser.Scene {
             [territoryIds[i], territoryIds[j]] = [territoryIds[j], territoryIds[i]];
         }
 
-        // Assign territories evenly to players
+        // Assign territories evenly to players with animation
         const numPlayers = window.gameVars.players.length;
+
+        // Display an "assigning territories" message
+        //TODO: try to reuse the same animation we are using while changing the phase
+        const assignText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            "ASSIGNING TERRITORIES",
+            {
+                fontSize: '40px',
+                fontStyle: 'bold',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 6
+            }
+        ).setOrigin(0.5).setDepth(1000);
+
+        // Animate text
+        this.tweens.add({
+            targets: assignText,
+            alpha: { from: 0, to: 1 },
+            scale: { from: 0.5, to: 1 },
+            duration: 500,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                // Fade out after a short delay
+                this.time.delayedCall(1000, () => {
+                    this.tweens.add({
+                        targets: assignText,
+                        alpha: 0,
+                        duration: 500,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            assignText.destroy();
+                        }
+                    });
+                });
+            }
+        });
 
         for (let i = 0; i < territoryIds.length; i++) {
             const territoryId = territoryIds[i];
@@ -278,20 +358,34 @@ class GameScene extends Phaser.Scene {
             const player = window.gameVars.players[playerId];
             const territory = this.territories.find(t => t.id === territoryId);
 
-            // Assign territory to player
-            territory.setOwner(player);
+            // Use delayed call to create staggered assignment animation
+            this.time.delayedCall(1500 + i * 50, () => {
+                // Assign territory to player
+                territory.setOwner(player);
 
-            // Places one army on the territory because every territory must have at least 1 army according to risk rule
-            territory.setArmies(1);
+                // Places one army on the territory
+                territory.setArmies(1);
 
-            // Add territory to player's list 
-            player.territories.push(territoryId);
+                // a flash effect for territory assignment
+                this.tweens.add({
+                    targets: territory.territoryImage,
+                    scaleX: territory.originalScale * 1.2,
+                    scaleY: territory.originalScale * 1.2,
+                    duration: 150,
+                    yoyo: true,
+                    ease: 'Sine.easeInOut'
+                });
 
-            // Reduce player's reinforcements because one army was used to claim the territory above,
-            // The player has one less reinforcement
-            player.reinforcements--;
+                // Add territory to player's list 
+                player.territories.push(territoryId);
+
+                // Reduce player's reinforcements
+                player.reinforcements--;
+            });
         }
     }
+
+
 
     updateGameInfo() {
         const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex];
@@ -351,12 +445,19 @@ class GameScene extends Phaser.Scene {
         if (window.gameVars.gamePhase === "placement") {
             // From placement -> attack (same player)
             window.gameVars.gamePhase = "attack";
+
+            //  phase transition animation
+            this.createPhaseTransitionAnimation("attack");
+
             this.updateGameInfo();
             return;
         }
         else if (window.gameVars.gamePhase === "attack") {
             // From attack -> fortify (same player)
             window.gameVars.gamePhase = "fortify";
+
+            //  phase transition animation
+            this.createPhaseTransitionAnimation("fortify");
 
             // Reset selections
             if (window.gameVars.selectedTerritory) {
@@ -406,8 +507,16 @@ class GameScene extends Phaser.Scene {
             // Calculate reinforcements including continent bonuses for the new player
             currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer);
 
+            // Create player turn change animation
+            this.createPlayerTurnAnimation(window.gameVars.currentPlayerIndex);
+
             // Move to placement phase for next player
             window.gameVars.gamePhase = "placement";
+
+            // Add slight delay, then show placement phase animation
+            this.time.delayedCall(1500, () => {
+                this.createPhaseTransitionAnimation("placement");
+            });
 
             // Update display
             this.updateGameInfo();
@@ -641,13 +750,18 @@ class GameScene extends Phaser.Scene {
         // Add territory to attacker's list
         attackerPlayer.territories.push(defender.id);
 
-        // Transfer ownership and move armies
-        defender.setOwner(attackerPlayer);
+        // capture animation before changing ownership
+        this.createCaptureAnimation(defender, attackerPlayer);
 
-        // Move armies (minimum of 1, up to attacker.armies - 1)
-        const armiesToMove = Math.max(attacker.armies - 1, 1);
-        defender.setArmies(armiesToMove);
-        attacker.setArmies(1);
+        // Transfer ownership and move armies (with delay so animation shows first)
+        this.time.delayedCall(500, () => {
+            defender.setOwner(attackerPlayer);
+
+            // Move armies (minimum of 1, up to attacker.armies - 1)
+            const armiesToMove = Math.max(attacker.armies - 1, 1);
+            defender.setArmies(armiesToMove);
+            attacker.setArmies(1);
+        });
 
         this.actionText.setText(`You captured ${defender.name}!`);
 
@@ -705,7 +819,18 @@ class GameScene extends Phaser.Scene {
 
     gameOver(winnerIndex) {
         // Display game over message
-        this.add.rectangle(600, 400, 600, 300, 0x000000, 0.8).setDepth(1000);
+        //TODO: need to check on the game over how it's looking
+        const overlay = this.add.rectangle(600, 400, 600, 300, 0x000000, 0.8).setDepth(1000);
+
+        // Add fade-in animation for game over screen
+        overlay.alpha = 0;
+        this.tweens.add({
+            targets: overlay,
+            alpha: 0.8,
+            duration: 800,
+            ease: 'Power2'
+        });
+
         this.add.text(600, 350, "GAME OVER", {
             fontSize: "48px",
             fill: "#FFF"
@@ -716,15 +841,42 @@ class GameScene extends Phaser.Scene {
             fill: this.hexNumToHexString(window.gameVars.players[winnerIndex].color)
         }).setOrigin(0.5).setDepth(1000);
 
-        // Add restart button
+        // Add restart button with animation
         const restartButton = this.add.rectangle(600, 500, 200, 50, 0x444444).setInteractive();
         this.add.text(600, 500, "Play Again", {
             fontSize: "24px",
             fill: "#FFF"
         }).setOrigin(0.5).setDepth(1000);
 
+        // Add button hover effect
+        restartButton.on("pointerover", () => {
+            this.tweens.add({
+                targets: restartButton,
+                scaleX: 1.1,
+                scaleY: 1.1,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
+        });
+
+        restartButton.on("pointerout", () => {
+            this.tweens.add({
+                targets: restartButton,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 100,
+                ease: 'Sine.easeOut'
+            });
+        });
+
         restartButton.on("pointerdown", () => {
-            this.scene.start("MainMenuScene");
+            // Add fade out transition
+            this.cameras.main.fadeOut(500, 0, 0, 0);
+
+            // Start MainMenuScene after fade completes
+            this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+                this.scene.start("MainMenuScene");
+            });
         });
     }
 
@@ -785,6 +937,27 @@ class GameScene extends Phaser.Scene {
     showDiceRoll(attackerDice, defenderDice) {
         this.diceContainer.setVisible(true);
 
+        // Create a background flash effect for dice battle
+        const flashOverlay = this.add.rectangle(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0xFFFFFF,
+            0.3
+        ).setDepth(500);
+
+        // Animate flash overlay
+        this.tweens.add({
+            targets: flashOverlay,
+            alpha: 0,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => {
+                flashOverlay.destroy();
+            }
+        });
+
         // Set up dice animation
         const rollDuration = 1000; // 1 second for dice animation
         const rollFrames = 10; // Number of "rolls" before settling
@@ -797,10 +970,30 @@ class GameScene extends Phaser.Scene {
         // Show only the dice being used
         for (let i = 0; i < attackerDice.length; i++) {
             this.attackerDiceSprites[i].setVisible(true);
+            this.attackerDiceSprites[i].setScale(0); // Start small for animation
+
+            // Animate dice appearance
+            this.tweens.add({
+                targets: this.attackerDiceSprites[i],
+                scale: 1,
+                duration: 200,
+                delay: i * 100,
+                ease: 'Back.easeOut'
+            });
         }
 
         for (let i = 0; i < defenderDice.length; i++) {
             this.defenderDiceSprites[i].setVisible(true);
+            this.defenderDiceSprites[i].setScale(0); // Start small for animation
+
+            // Animate dice appearance
+            this.tweens.add({
+                targets: this.defenderDiceSprites[i],
+                scale: 1,
+                duration: 200,
+                delay: i * 100 + 300, // Slight delay after attacker dice
+                ease: 'Back.easeOut'
+            });
         }
 
         // Animate dice rolling
@@ -808,21 +1001,40 @@ class GameScene extends Phaser.Scene {
         const rollInterval = setInterval(() => {
             rollCount++;
 
-            // Show random dice faces during roll animation
+            // Show random dice faces during roll animation with rotation
             for (let i = 0; i < attackerDice.length; i++) {
                 const randomFace = Math.floor(Math.random() * 6);
                 this.attackerDiceSprites[i].setFrame(randomFace);
+
+                // Add a small rotation to make it look like it's tumbling
+                this.attackerDiceSprites[i].setAngle(Math.random() * 20 - 10);
             }
 
             for (let i = 0; i < defenderDice.length; i++) {
                 const randomFace = Math.floor(Math.random() * 6);
                 this.defenderDiceSprites[i].setFrame(randomFace);
+
+                // Add a small rotation
+                this.defenderDiceSprites[i].setAngle(Math.random() * 20 - 10);
             }
 
             // On the last frame, show the actual results
             if (rollCount >= rollFrames) {
                 clearInterval(rollInterval);
-                this.showDiceResults(attackerDice, defenderDice);
+
+                // Add a small delay before showing final results
+                this.time.delayedCall(200, () => {
+                    // Reset rotation
+                    for (let i = 0; i < attackerDice.length; i++) {
+                        this.attackerDiceSprites[i].setAngle(0);
+                    }
+
+                    for (let i = 0; i < defenderDice.length; i++) {
+                        this.defenderDiceSprites[i].setAngle(0);
+                    }
+
+                    this.showDiceResults(attackerDice, defenderDice);
+                });
             }
         }, rollDuration / rollFrames);
     }
@@ -831,27 +1043,95 @@ class GameScene extends Phaser.Scene {
         // Set the actual dice faces (dice values are 1-6, sprite frames are 0-5)
         for (let i = 0; i < attackerDice.length; i++) {
             this.attackerDiceSprites[i].setFrame(attackerDice[i] - 1);
+
+            // a bounce effect when showing final value
+            this.tweens.add({
+                targets: this.attackerDiceSprites[i],
+                y: this.attackerDiceSprites[i].y - 10,
+                duration: 150,
+                yoyo: true,
+                ease: 'Bounce.easeOut'
+            });
         }
 
         for (let i = 0; i < defenderDice.length; i++) {
             this.defenderDiceSprites[i].setFrame(defenderDice[i] - 1);
+
+            // a bounce effect when showing final value
+            this.tweens.add({
+                targets: this.defenderDiceSprites[i],
+                y: this.defenderDiceSprites[i].y - 10,
+                duration: 150,
+                yoyo: true,
+                ease: 'Bounce.easeOut'
+            });
         }
 
-        // Compare dice and show results
+        // Compare dice and show results with animation
+        const comparisons = [];
+
         for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
-            if (attackerDice[i] > defenderDice[i]) {
-                // Attacker wins
-                this.resultIndicators[i].setText(">");
-                this.resultIndicators[i].setColor("#00FF00");
-                this.defenderDiceSprites[i].setTint(0xFF0000); // Red tint for loser
-            } else {
-                // Defender wins or ties
-                this.resultIndicators[i].setText("<");
-                this.resultIndicators[i].setColor("#FF0000");
-                this.attackerDiceSprites[i].setTint(0xFF0000); // Red tint for loser
-            }
+            comparisons.push({ index: i, attackerValue: attackerDice[i], defenderValue: defenderDice[i] });
         }
+
+        // Animate results with a staggered delay
+        comparisons.forEach((comparison, idx) => {
+            const i = comparison.index;
+
+            this.time.delayedCall(300 + idx * 400, () => {
+                if (comparison.attackerValue > comparison.defenderValue) {
+                    // Attacker wins
+                    this.resultIndicators[i].setText(">");
+                    this.resultIndicators[i].setColor("#00FF00");
+                    this.defenderDiceSprites[i].setTint(0xFF0000); // Red tint for loser
+
+                    // Add shake animation to defender's die
+                    this.tweens.add({
+                        targets: this.defenderDiceSprites[i],
+                        x: this.defenderDiceSprites[i].x + 5,
+                        duration: 50,
+                        yoyo: true,
+                        repeat: 3,
+                        ease: 'Sine.easeInOut'
+                    });
+
+                    // Scale up the result indicator with a nice animation
+                    this.resultIndicators[i].setScale(0);
+                    this.tweens.add({
+                        targets: this.resultIndicators[i],
+                        scale: 1.5,
+                        duration: 200,
+                        ease: 'Back.easeOut'
+                    });
+                } else {
+                    // Defender wins or ties
+                    this.resultIndicators[i].setText("<");
+                    this.resultIndicators[i].setColor("#FF0000");
+                    this.attackerDiceSprites[i].setTint(0xFF0000); // Red tint for loser
+
+                    // Add shake animation to attacker's die
+                    this.tweens.add({
+                        targets: this.attackerDiceSprites[i],
+                        x: this.attackerDiceSprites[i].x - 5,
+                        duration: 50,
+                        yoyo: true,
+                        repeat: 3,
+                        ease: 'Sine.easeInOut'
+                    });
+
+                    // Scale up the result indicator with a nice animation
+                    this.resultIndicators[i].setScale(0);
+                    this.tweens.add({
+                        targets: this.resultIndicators[i],
+                        scale: 1.5,
+                        duration: 200,
+                        ease: 'Back.easeOut'
+                    });
+                }
+            });
+        });
     }
+
 
 
     showPlayerEliminationMessage(playerId) {
@@ -892,6 +1172,173 @@ class GameScene extends Phaser.Scene {
 
         messageBox.setDepth(1000);
     }
+
+
+    createPhaseTransitionAnimation(newPhase) {
+        // Create a text overlay for the phase change
+        const phaseText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2,
+            newPhase.toUpperCase() + " PHASE",
+            {
+                fontSize: '64px',
+                fontStyle: 'bold',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 6,
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        phaseText.setAlpha(0);
+        phaseText.setScale(0.5);
+        phaseText.setDepth(1000);
+
+        // First tween - fade in and scale up
+        this.tweens.add({
+            targets: phaseText,
+            alpha: 1,
+            scale: 1.2,
+            duration: 600,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                // Second tween - hold for a moment
+                this.time.delayedCall(800, () => {
+                    // Third tween - fade out and scale up more
+                    this.tweens.add({
+                        targets: phaseText,
+                        alpha: 0,
+                        scale: 1.5,
+                        duration: 500,
+                        ease: 'Back.easeIn',
+                        onComplete: () => {
+                            phaseText.destroy();
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+
+
+    createPlayerTurnAnimation(playerIndex) {
+        const player = window.gameVars.players[playerIndex];
+
+        // Convert numeric color to hex string
+        const colorString = this.hexNumToHexString(player.color);
+
+        // Create the player turn announcement
+        const playerText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 - 40,
+            "PLAYER " + (playerIndex + 1) + "'S TURN",
+            {
+                fontSize: '52px',
+                fontStyle: 'bold',
+                fill: colorString,
+                stroke: '#000000',
+                strokeThickness: 6,
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        // Create reinforcements text
+        const reinforcementsText = this.add.text(
+            this.cameras.main.width / 2,
+            this.cameras.main.height / 2 + 30,
+            `Reinforcements: ${player.reinforcements}`,
+            {
+                fontSize: '32px',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 4,
+                align: 'center'
+            }
+        ).setOrigin(0.5);
+
+        // Set initial properties for animation
+        playerText.setAlpha(0);
+        playerText.setScale(0.5);
+        reinforcementsText.setAlpha(0);
+        reinforcementsText.setScale(0.5);
+
+        // Set high depth to appear above everything
+        playerText.setDepth(1000);
+        reinforcementsText.setDepth(1000);
+
+        // First tween - fade in and scale up
+        this.tweens.add({
+            targets: [playerText, reinforcementsText],
+            alpha: 1,
+            scale: 1,
+            duration: 800,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                // Hold for a moment, then fade out
+                this.time.delayedCall(1200, () => {
+                    // Fade out and scale up more
+                    this.tweens.add({
+                        targets: [playerText, reinforcementsText],
+                        alpha: 0,
+                        scale: 1.3,
+                        duration: 500,
+                        ease: 'Sine.easeIn',
+                        onComplete: () => {
+                            playerText.destroy();
+                            reinforcementsText.destroy();
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+
+    createCaptureAnimation(territory, newOwner) {
+        // Create a flash effect
+        const flash = this.add.circle(
+            territory.territoryImage.x,
+            territory.territoryImage.y,
+            50,
+            newOwner.color,
+            0.7
+        );
+        flash.setDepth(300);
+
+        // Add animation for the flash
+        this.tweens.add({
+            targets: flash,
+            radius: 100,
+            alpha: 0,
+            duration: 800,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                flash.destroy();
+            }
+        });
+
+        // Also make territory briefly glow
+        territory.territoryImage.setTint(newOwner.color);
+
+        // Add a scale pulse animation
+        this.tweens.add({
+            targets: territory.territoryImage,
+            scaleX: territory.originalScale * 1.3,
+            scaleY: territory.originalScale * 1.3,
+            duration: 300,
+            yoyo: true,
+            repeat: 1,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                territory.territoryImage.clearTint();
+                territory.territoryImage.setScale(territory.originalScale);
+            }
+        });
+    }
+
+
+
 
 
 

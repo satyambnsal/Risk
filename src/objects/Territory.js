@@ -11,7 +11,7 @@ class Territory {
         this.hoverTween = null;
 
         // Visual elements - using the neutral version of this specific territory
-        //TODO: right now we also don't have any image for the the neutral but it's not compulsory to add
+        //TODO: Please put a neutral image of the territory
         this.territoryImage = scene.add.image(x, y, `territory-${id}-neutral`);
         this.territoryImage.setInteractive();
         this.territoryImage.setScale(this.originalScale);
@@ -107,14 +107,123 @@ class Territory {
     }
 
     addArmies(count) {
+        const previousCount = this.armies;
         this.armies += count;
+
         this.armiesText.setText(this.armies.toString());
+
+        // Flash effect for the armies counter
+        this.scene.tweens.add({
+            targets: this.armiesText,
+            scale: 1.5,
+            duration: 200,
+            yoyo: true,
+            ease: 'Sine.easeOut'
+        });
+
+        // If this is a significant addition, add a "+" indicator animation
+        // if (count > 1) {
+        const plusText = this.scene.add.text(
+            this.territoryImage.x + 20,
+            this.territoryImage.y - 20,
+            "+" + count,
+            {
+                fontSize: '18px',
+                fontStyle: 'bold',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 3
+            }
+        ).setOrigin(0.5)
+            .setDepth(1000);
+
+        // Animate the plus text
+        this.scene.tweens.add({
+            targets: plusText,
+            y: this.territoryImage.y - 200,
+            alpha: 0,
+            duration: 1600,
+            ease: 'Power2',
+            onComplete: () => {
+                plusText.destroy();
+            }
+        });
+        // }
+
+        // Create a pulsing effect on the territory itself
+        this.scene.tweens.add({
+            targets: this.territoryImage,
+            scale: this.originalScale * 1.1,
+            duration: 100,
+            yoyo: true,
+            repeat: 1,
+            ease: 'Sine.easeInOut'
+        });
     }
 
+
+
     removeArmies(count) {
+        const previousCount = this.armies;
         this.armies = Math.max(0, this.armies - count);
+
+        // Update the text
         this.armiesText.setText(this.armies.toString());
+
+        // Flash red for army loss
+        this.armiesText.setTint(0xFF0000);
+
+        this.scene.tweens.add({
+            targets: this.armiesText,
+            scale: 1.3,
+            duration: 200,
+            yoyo: true,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                // Reset tint after animation
+                this.armiesText.clearTint();
+            }
+        });
+
+        // If loss is significant, show a "-" indicator
+        if (count > 1) {
+            const minusText = this.scene.add.text(
+                this.territoryImage.x + 20,
+                this.territoryImage.y - 20,
+                "-" + count,
+                {
+                    fontSize: '18px',
+                    fontStyle: 'bold',
+                    fill: '#FF0000',
+                    stroke: '#000000',
+                    strokeThickness: 3
+                }
+            ).setOrigin(0.5);
+
+            // Animate the minus text
+            this.scene.tweens.add({
+                targets: minusText,
+                y: this.territoryImage.y - 50,
+                alpha: 0,
+                duration: 800,
+                ease: 'Power2',
+                onComplete: () => {
+                    minusText.destroy();
+                }
+            });
+        }
+
+        // Small shake animation to indicate damage
+        this.scene.tweens.add({
+            targets: this.territoryImage,
+            x: this.territoryImage.x + 3,
+            duration: 50,
+            yoyo: true,
+            repeat: 2,
+            ease: 'Sine.easeInOut'
+        });
     }
+
 
     setSelected(selected) {
         this.isSelected = selected;
@@ -130,8 +239,18 @@ class Territory {
             this.nameText.setDepth(200);
             this.armiesText.setDepth(200);
 
-            // this.territoryImage.setTint(0xFFFF00); // Yellow highlight
-            this.territoryImage.setScale(this.originalScale * 1.15); // Make it bigger
+            // TODO: Need to veirfy if we need scale or not
+            this.territoryImage.setScale(this.originalScale * 1.15);
+
+            // TODO: Need to verify if we need pulsing animation when selected
+            this.hoverTween = this.scene.tweens.add({
+                targets: this.territoryImage,
+                scale: { from: this.originalScale * 1.15, to: this.originalScale * 1.25 },
+                duration: 800,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
 
             this.nameText.setScale(1.2);
             this.armiesText.setScale(1.2);
