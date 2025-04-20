@@ -1,6 +1,12 @@
 import * as Phaser from 'phaser'
 import { Territory } from '../objects/Territory'
-import { TerritoryData, ContinentData, Player, TerritoryHandler } from '../types'
+import {
+  TerritoryData,
+  ContinentData,
+  Player,
+  TerritoryHandler,
+  TerritoryInterface,
+} from '../types'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -605,7 +611,7 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     })
   }
 
-  handleTerritoryClick(territory: Territory) {
+  handleTerritoryClick(territory: TerritoryInterface) {
     const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex]
 
     // INITIAL PLACEMENT PHASE
@@ -831,8 +837,8 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
   }
 
   resolveAttack() {
-    const attacker = window.gameVars.selectedTerritory
-    const defender = window.gameVars.targetTerritory
+    const attacker = window.gameVars.selectedTerritory as Territory
+    const defender = window.gameVars.targetTerritory as Territory
 
     if (!attacker || !defender) return
 
@@ -1205,7 +1211,7 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     })
   }
 
-  createCaptureAnimation(territory: Territory, newOwner: any) {
+  createCaptureAnimation(territory: Territory, newOwner: Player) {
     // Create a flash effect
     const flash = this.add.circle(
       territory.territoryImage.x,
@@ -1248,8 +1254,8 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
   }
 
   fortifyTerritory() {
-    const source = window.gameVars.selectedTerritory
-    const destination = window.gameVars.targetTerritory
+    const source = window.gameVars.selectedTerritory as Territory
+    const destination = window.gameVars.targetTerritory as Territory
 
     if (!source || !destination) return
 

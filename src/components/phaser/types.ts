@@ -1,4 +1,4 @@
-export interface Territory {
+export interface TerritoryInterface {
   id: number
   name: string
   owner: number | null
@@ -14,7 +14,7 @@ export interface Territory {
   setArmies(count: number): void
 }
 export interface TerritoryHandler {
-  handleTerritoryClick(territory: Territory): void
+  handleTerritoryClick(territory: TerritoryInterface): void
 }
 
 export interface Player {
@@ -43,8 +43,8 @@ export interface GameVars {
   players: Player[]
   currentPlayerIndex: number
   gamePhase: 'initialPlacement' | 'placement' | 'attack' | 'fortify'
-  selectedTerritory: Territory | null
-  targetTerritory: Territory | null
+  selectedTerritory: TerritoryInterface | null
+  targetTerritory: TerritoryInterface | null
   initialPlacementDone: boolean
 }
 

@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
-import { Player, TerritoryHandler } from '../types'
+import { Player, TerritoryHandler, TerritoryInterface } from '../types'
 
-export class Territory {
+export class Territory implements TerritoryInterface {
   public scene: Phaser.Scene & TerritoryHandler
   public id: number
   public name: string
