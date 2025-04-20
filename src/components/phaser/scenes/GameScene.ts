@@ -760,6 +760,9 @@ export class GameScene extends Phaser.Scene {
 
     // Check if defender was defeated
     if (defenderTerritory.armies - defenderLosses <= 0) {
+      // Get player references
+      const defenderPlayer = window.gameState.players[defenderTerritory.owner!]
+
       // Calculate armies to move (all but 1 from attacker)
       const armiesToMove = attackerTerritory.armies - attackerLosses - 1
 
@@ -769,6 +772,15 @@ export class GameScene extends Phaser.Scene {
         window.gameState.targetTerritoryId,
         armiesToMove
       )
+
+      // Set action text with capture message
+      this.actionText.setText(`You captured ${defenderTerritory.name}!`)
+
+      // Check if the defender player has been eliminated
+      if (defenderPlayer.territories.length === 0) {
+        defenderPlayer.eliminated = true
+        this.showPlayerEliminationMessage(defenderPlayer.id)
+      }
     }
 
     // Reset selections
