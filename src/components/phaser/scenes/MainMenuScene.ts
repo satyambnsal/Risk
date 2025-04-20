@@ -159,14 +159,14 @@ export class MainMenuScene extends Phaser.Scene {
 
   setupPlayers(numPlayers: number): void {
     // Clear existing Players
-    window.gameVars.players = []
+    window.gameState.players = []
 
     // Player colors
     const colors = [0xcf402e, 0x2ca5c7, 0x96c72c, 0xc7b52c, 0xb52cc7, 0x00ffff]
 
     // Create players
     for (let i = 0; i < numPlayers; i++) {
-      window.gameVars.players.push({
+      window.gameState.players.push({
         id: i,
         color: colors[i],
         armies: 0,
@@ -177,7 +177,7 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     // Reset game state
-    window.gameVars.currentPlayerIndex = 0
-    window.gameVars.gamePhase = 'initialPlacement'
+    window.gameState.currentPlayerIndex = 0
+    window.gameState.gamePhase = 'initialPlacement'
   }
 }

@@ -1,20 +1,10 @@
-export interface TerritoryInterface {
+export interface TerritoryState {
   id: number
   name: string
   owner: number | null
   armies: number
-  isSelected: boolean
   continent: string
-  territoryImage: Phaser.GameObjects.Image
-  originalScale: number
-  setSelected(selected: boolean): void
-  setOwner(player: Player): void
-  addArmies(count: number): void
-  removeArmies(count: number): void
-  setArmies(count: number): void
-}
-export interface TerritoryHandler {
-  handleTerritoryClick(territory: TerritoryInterface): void
+  isSelected: boolean
 }
 
 export interface Player {
@@ -39,18 +29,18 @@ export interface ContinentData {
   bonus: number
 }
 
-export interface GameVars {
+export interface GameState {
   players: Player[]
   currentPlayerIndex: number
   gamePhase: 'initialPlacement' | 'placement' | 'attack' | 'fortify'
-  selectedTerritory: TerritoryInterface | null
-  targetTerritory: TerritoryInterface | null
+  selectedTerritoryId: number | null
+  targetTerritoryId: number | null
   initialPlacementDone: boolean
 }
 
-// Extend Window interface once to avoid duplicate declarations
+// Extend Window interface
 declare global {
   interface Window {
-    gameVars: GameVars
+    gameState: GameState
   }
 }

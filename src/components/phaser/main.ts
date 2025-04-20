@@ -3,13 +3,13 @@ import { BootScene } from './scenes/BootScene'
 import { MainMenuScene } from './scenes/MainMenuScene'
 import { GameScene } from './scenes/GameScene'
 
-// Initialize gameVars if not already done
-window.gameVars = {
+// Initialize gameState if not already done
+window.gameState = {
   players: [],
   currentPlayerIndex: 0,
   gamePhase: 'initialPlacement',
-  selectedTerritory: null,
-  targetTerritory: null,
+  selectedTerritoryId: null,
+  targetTerritoryId: null,
   initialPlacementDone: false,
 }
 

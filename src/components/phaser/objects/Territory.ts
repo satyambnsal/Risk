@@ -1,8 +1,7 @@
 import * as Phaser from 'phaser'
-import { Player, TerritoryHandler, TerritoryInterface } from '../types'
+import { TerritoryState, Player } from '../types'
 
-export class Territory implements TerritoryInterface {
-  public scene: Phaser.Scene & TerritoryHandler
+export class Territory implements TerritoryState {
   public id: number
   public name: string
   public owner: number | null
@@ -10,18 +9,28 @@ export class Territory implements TerritoryInterface {
   public isSelected: boolean
   public continent: string
   public originalScale: number
-  public territoryImage: Phaser.GameObjects.Image
+
+  // Visual components
+  public image: Phaser.GameObjects.Image
   public nameText: Phaser.GameObjects.Text
   public armiesText: Phaser.GameObjects.Text
-  private hoverTween: Phaser.Tweens.Tween | null
+
+  // Position properties (for easier access)
+  public x: number
+  public y: number
+
+  private scene: Phaser.Scene
+  private hoverTween: Phaser.Tweens.Tween | null = null
+  private onClickCallback: (territory: Territory) => void
 
   constructor(
-    scene: Phaser.Scene & TerritoryHandler,
+    scene: Phaser.Scene,
     x: number,
     y: number,
     name: string,
     id: number,
-    continent: string
+    continent: string,
+    onClick: (territory: Territory) => void
   ) {
     this.scene = scene
     this.id = id
@@ -31,68 +40,20 @@ export class Territory implements TerritoryInterface {
     this.isSelected = false
     this.continent = continent
     this.originalScale = 0.6
-    this.hoverTween = null
+    this.x = x
+    this.y = y
+    this.onClickCallback = onClick
 
-    // Visual elements - using the neutral version of this specific territory
-    this.territoryImage = scene.add.image(x, y, `territory-${id}-neutral`)
-    this.territoryImage.setInteractive()
-    this.territoryImage.setScale(this.originalScale)
-    this.territoryImage.setDepth(1)
+    // Create visual elements
+    this.image = scene.add.image(x, y, `territory-${id}-neutral`)
+    this.image.setInteractive()
+    this.image.setScale(this.originalScale)
+    this.image.setDepth(1)
 
-    this.territoryImage.on('pointerdown', () => {
-      this.scene.handleTerritoryClick(this)
-    })
+    // Set up interaction events
+    this.setupInteractions()
 
-    this.territoryImage.on('pointerover', () => {
-      if (!this.isSelected) {
-        this.territoryImage.setDepth(105)
-        this.nameText.setDepth(105)
-        this.armiesText.setDepth(105)
-
-        this.territoryImage.setScale(this.originalScale * 1.1)
-
-        if (this.hoverTween) {
-          this.hoverTween.stop()
-        }
-
-        this.hoverTween = this.scene.tweens.add({
-          targets: this.territoryImage,
-          scale: this.originalScale * 1.15,
-          duration: 100,
-          yoyo: true,
-          ease: 'Sine.easeOut',
-          onComplete: () => {
-            // Ensure scale is correct when tween completes
-            if (!this.isSelected) {
-              this.territoryImage.setScale(this.originalScale * 1.1)
-            }
-          },
-        })
-
-        this.nameText.setScale(1.15)
-        this.armiesText.setScale(1.15)
-      }
-    })
-
-    this.territoryImage.on('pointerout', () => {
-      if (!this.isSelected) {
-        this.armiesText.setDepth(0)
-        this.nameText.setDepth(0)
-        this.territoryImage.setDepth(0)
-
-        if (this.hoverTween) {
-          this.hoverTween.stop()
-          this.hoverTween = null
-        }
-
-        this.territoryImage.clearTint()
-        this.territoryImage.setScale(this.originalScale)
-
-        this.nameText.setScale(1)
-        this.armiesText.setScale(1)
-      }
-    })
-
+    // Create text elements
     this.nameText = scene.add
       .text(x - 10, y - 15, name, {
         fontSize: '12px',
@@ -115,34 +76,90 @@ export class Territory implements TerritoryInterface {
       .setDepth(1)
   }
 
-  setOwner(player: Player) {
+  private setupInteractions(): void {
+    this.image.on('pointerdown', () => {
+      this.onClickCallback(this)
+    })
+
+    this.image.on('pointerover', () => {
+      if (!this.isSelected) {
+        this.image.setDepth(105)
+        this.nameText.setDepth(105)
+        this.armiesText.setDepth(105)
+
+        this.image.setScale(this.originalScale * 1.1)
+
+        if (this.hoverTween) {
+          this.hoverTween.stop()
+        }
+
+        this.hoverTween = this.scene.tweens.add({
+          targets: this.image,
+          scale: this.originalScale * 1.15,
+          duration: 100,
+          yoyo: true,
+          ease: 'Sine.easeOut',
+          onComplete: () => {
+            // Ensure scale is correct when tween completes
+            if (!this.isSelected) {
+              this.image.setScale(this.originalScale * 1.1)
+            }
+          },
+        })
+
+        this.nameText.setScale(1.15)
+        this.armiesText.setScale(1.15)
+      }
+    })
+
+    this.image.on('pointerout', () => {
+      if (!this.isSelected) {
+        this.armiesText.setDepth(0)
+        this.nameText.setDepth(0)
+        this.image.setDepth(0)
+
+        if (this.hoverTween) {
+          this.hoverTween.stop()
+          this.hoverTween = null
+        }
+
+        this.image.clearTint()
+        this.image.setScale(this.originalScale)
+
+        this.nameText.setScale(1)
+        this.armiesText.setScale(1)
+      }
+    })
+  }
+
+  setOwner(player: Player): void {
     this.owner = player.id
     // Color name mapping for territory textures
     const colorNames = ['red', 'blue', 'green', 'yellow', 'purple', 'cyan']
     const colorName = colorNames[player.id]
 
     // Each territory has its own unique image for each color
-    this.territoryImage.setTexture(`territory-${this.id}-${colorName}`)
-    this.territoryImage.setScale(this.originalScale)
+    this.image.setTexture(`territory-${this.id}-${colorName}`)
+    this.image.setScale(this.originalScale)
   }
 
-  setArmies(count: number) {
+  setArmies(count: number): void {
     this.armies = count
     this.armiesText.setText(count.toString())
   }
 
-  addArmies(count: number) {
+  addArmies(count: number): void {
     this.armies += count
     this.updateArmiesWithAnimation(count)
   }
 
-  removeArmies(count: number) {
+  removeArmies(count: number): void {
     const previousCount = this.armies
     this.armies = Math.max(0, previousCount - count)
     this.updateArmiesWithAnimation(-count)
   }
 
-  setSelected(selected: boolean) {
+  setSelected(selected: boolean): void {
     this.isSelected = selected
 
     // Stop any existing hover tween regardless of selection change
@@ -152,16 +169,16 @@ export class Territory implements TerritoryInterface {
     }
 
     if (selected) {
-      this.territoryImage.setDepth(200)
+      this.image.setDepth(200)
       this.nameText.setDepth(200)
       this.armiesText.setDepth(200)
 
       // Scale the territory when selected
-      this.territoryImage.setScale(this.originalScale * 1.15)
+      this.image.setScale(this.originalScale * 1.15)
 
       // Pulsing animation when selected
       this.hoverTween = this.scene.tweens.add({
-        targets: this.territoryImage,
+        targets: this.image,
         scale: { from: this.originalScale * 1.15, to: this.originalScale * 1.25 },
         duration: 800,
         yoyo: true,
@@ -173,22 +190,37 @@ export class Territory implements TerritoryInterface {
       this.armiesText.setScale(1.2)
     } else {
       // Reset depth to 0 when deselected
-      this.territoryImage.setDepth(0)
+      this.image.setDepth(0)
       this.nameText.setDepth(0)
       this.armiesText.setDepth(0)
 
       // Remove all effects
-      this.territoryImage.clearTint()
-      this.territoryImage.setScale(this.originalScale)
+      this.image.clearTint()
+      this.image.setScale(this.originalScale)
 
-      this.scene.tweens.killTweensOf(this.territoryImage)
+      this.scene.tweens.killTweensOf(this.image)
 
       this.nameText.setScale(1)
       this.armiesText.setScale(1)
     }
   }
 
-  updateArmiesWithAnimation(count: number) {
+  // Set a tint color
+  setTint(color: number): void {
+    this.image.setTint(color)
+  }
+
+  // Clear tint
+  clearTint(): void {
+    this.image.clearTint()
+  }
+
+  // Set scale directly
+  setScale(scale: number): void {
+    this.image.setScale(scale)
+  }
+
+  private updateArmiesWithAnimation(count: number): void {
     // Update the text display
     this.armiesText.setText(this.armies.toString())
 
@@ -208,7 +240,7 @@ export class Territory implements TerritoryInterface {
       const color = count > 0 ? '#FFFFFF' : '#FF0000'
 
       const changeText = this.scene.add
-        .text(this.territoryImage.x + 20, this.territoryImage.y - 20, sign + Math.abs(count), {
+        .text(this.x + 20, this.y - 20, sign + Math.abs(count), {
           fontSize: '24px',
           fontStyle: 'bold',
           color: color,
@@ -221,9 +253,9 @@ export class Territory implements TerritoryInterface {
       // Animate the text
       this.scene.tweens.add({
         targets: changeText,
-        y: this.territoryImage.y - 200,
+        y: this.y - 100,
         alpha: 0,
-        duration: 2400,
+        duration: 1500,
         ease: 'Power2',
         onComplete: () => {
           changeText.destroy()
@@ -235,7 +267,7 @@ export class Territory implements TerritoryInterface {
     if (count > 0) {
       // Pulsing effect for adding armies
       this.scene.tweens.add({
-        targets: this.territoryImage,
+        targets: this.image,
         scale: this.originalScale * 1.1,
         duration: 100,
         yoyo: true,
@@ -260,8 +292,8 @@ export class Territory implements TerritoryInterface {
 
       // Shake animation for damage
       this.scene.tweens.add({
-        targets: this.territoryImage,
-        x: this.territoryImage.x + 3,
+        targets: this.image,
+        x: this.x + 3,
         duration: 50,
         yoyo: true,
         repeat: 2,

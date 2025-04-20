@@ -1,12 +1,7 @@
 import * as Phaser from 'phaser'
+import { TerritoryManager } from '../objects/TerritoryManager'
 import { Territory } from '../objects/Territory'
-import {
-  TerritoryData,
-  ContinentData,
-  Player,
-  TerritoryHandler,
-  TerritoryInterface,
-} from '../types'
+import { TerritoryData, ContinentData, Player } from '../types'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -93,9 +88,8 @@ const continentsData: Record<string, ContinentData> = {
   Australia: { territories: [20, 21, 22, 23, 24], bonus: 2 },
 }
 
-export class GameScene extends Phaser.Scene implements TerritoryHandler {
-  private territories: Territory[] = []
-  private adjacencyMap: Record<number, number[]>
+export class GameScene extends Phaser.Scene {
+  private territoryManager!: TerritoryManager
   private phaseText!: Phaser.GameObjects.Text
   private playerText!: Phaser.GameObjects.Text
   private actionText!: Phaser.GameObjects.Text
@@ -112,7 +106,6 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
 
   constructor() {
     super({ key: 'GameScene' })
-    this.adjacencyMap = adjacencyMapData
     this.continents = continentsData
   }
 
@@ -123,11 +116,20 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     // Start with camera faded out, then fade in
     this.cameras.main.fadeIn(800, 0, 0, 0)
 
+    // Initialize territory manager
+    this.territoryManager = new TerritoryManager(this, adjacencyMapData)
+
+    // Set up territory click handler
+    this.territoryManager.onTerritoryClick = (territory) => {
+      this.handleTerritoryClick(territory)
+    }
+
     // Create territories
-    this.createTerritories()
+    this.territoryManager.createTerritories(territoriesData)
 
     // Draw connection lines between territories
-    this.drawConnectionLines()
+    const graphics = this.add.graphics()
+    this.territoryManager.drawConnectionLines(graphics)
 
     // Initialize game info display
     this.setupGameInfo()
@@ -140,43 +142,6 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
 
     // Start the initial placement phase
     this.startPlacementPhase()
-  }
-
-  createTerritories() {
-    // Create territory objects
-    this.territories = territoriesData.map((data) => {
-      const territory = new Territory(this, data.x, data.y, data.name, data.id, data.continent)
-      return territory
-    })
-  }
-
-  drawConnectionLines() {
-    // Create a graphics object for drawing lines
-    const graphics = this.add.graphics()
-    graphics.lineStyle(2, 0x444444, 0.8)
-
-    // Draw lines between adjacent territories
-    for (let i = 0; i < this.territories.length; i++) {
-      const territory = this.territories[i]
-      const adjacentIds = this.adjacencyMap[territory.id]
-
-      for (let j = 0; j < adjacentIds.length; j++) {
-        const adjacentId = adjacentIds[j]
-
-        // Only draw each connection once
-        if (adjacentId > territory.id) {
-          const adjacentTerritory = this.territories.find((t) => t.id === adjacentId)
-          if (adjacentTerritory) {
-            graphics.lineBetween(
-              territory.territoryImage.x,
-              territory.territoryImage.y,
-              adjacentTerritory.territoryImage.x,
-              adjacentTerritory.territoryImage.y
-            )
-          }
-        }
-      }
-    }
   }
 
   setupGameInfo() {
@@ -306,15 +271,15 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
   }
 
   startPlacementPhase() {
-    window.gameVars.gamePhase = 'initialPlacement'
-    window.gameVars.initialPlacementDone = false
+    window.gameState.gamePhase = 'initialPlacement'
+    window.gameState.initialPlacementDone = false
     this.phaseText.setText('Phase: Initial Placement')
 
     // Calculate initial armies based on players
-    const numPlayers = window.gameVars.players.length
+    const numPlayers = window.gameState.players.length
     const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20)
 
-    window.gameVars.players.forEach((player) => {
+    window.gameState.players.forEach((player) => {
       player.armies = initialArmies
       player.reinforcements = initialArmies
     })
@@ -332,16 +297,16 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
 
   assignTerritories() {
     // Create a copy of territory IDs
-    const territoryIds = this.territories.map((t) => t.id)
+    const territoryIds = this.territoryManager.getAllTerritories().map((t) => t.id)
 
-    // Shuffle territory Ids
+    // Shuffle territory IDs
     for (let i = territoryIds.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[territoryIds[i], territoryIds[j]] = [territoryIds[j], territoryIds[i]]
     }
 
     // Assign territories evenly to players with animation
-    const numPlayers = window.gameVars.players.length
+    const numPlayers = window.gameState.players.length
 
     // Display an "assigning territories" message
     const assignText = this.add
@@ -381,43 +346,38 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     for (let i = 0; i < territoryIds.length; i++) {
       const territoryId = territoryIds[i]
       const playerId = i % numPlayers
-      const player = window.gameVars.players[playerId]
-      const territory = this.territories.find((t) => t.id === territoryId)
+      const player = window.gameState.players[playerId]
 
-      if (territory) {
-        // Use delayed call to create staggered assignment animation
-        this.time.delayedCall(1500 + i * 50, () => {
-          // Assign territory to player
-          territory.setOwner(player)
+      // Use delayed call to create staggered assignment animation
+      this.time.delayedCall(1500 + i * 50, () => {
+        // Assign territory to player
+        this.territoryManager.setTerritoryOwner(territoryId, player)
+        this.territoryManager.setTerritoryArmies(territoryId, 1)
 
-          // Places one army on the territory
-          territory.setArmies(1)
-
-          // a flash effect for territory assignment
+        // Flash effect for territory assignment
+        const territory = this.territoryManager.getTerritory(territoryId)
+        if (territory) {
           this.tweens.add({
-            targets: territory.territoryImage,
+            targets: territory.image,
             scaleX: territory.originalScale * 1.2,
             scaleY: territory.originalScale * 1.2,
             duration: 150,
             yoyo: true,
             ease: 'Sine.easeInOut',
           })
+        }
 
-          // Add territory to player's list
-          player.territories.push(territoryId)
+        // Add territory to player's list
+        player.territories.push(territoryId)
 
-          // Reduce player's reinforcements
-          player.reinforcements--
-        })
-      }
+        // Reduce player's reinforcements
+        player.reinforcements--
+      })
     }
   }
 
-  // Other methods would be converted similarly...
-
-  // Example method conversion:
   updateGameInfo() {
-    const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex]
+    const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
     if (currentPlayer.eliminated) {
       // Skip to next player if current one is eliminated
@@ -426,22 +386,22 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     }
 
     // Update player text with color
-    this.playerText.setText(`Player: ${window.gameVars.currentPlayerIndex + 1}`)
+    this.playerText.setText(`Player: ${window.gameState.currentPlayerIndex + 1}`)
     this.playerText.setColor(this.hexNumToHexString(currentPlayer.color))
 
     // Update phase text
-    if (window.gameVars.gamePhase === 'initialPlacement') {
+    if (window.gameState.gamePhase === 'initialPlacement') {
       this.phaseText.setText('Phase: Initial Placement')
     } else {
-      this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameVars.gamePhase)}`)
+      this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameState.gamePhase)}`)
     }
 
     // Update end turn button text based on phase
-    if (window.gameVars.gamePhase === 'placement') {
+    if (window.gameState.gamePhase === 'placement') {
       this.endTurnText.setText('Start Attack Phase')
-    } else if (window.gameVars.gamePhase === 'attack') {
+    } else if (window.gameState.gamePhase === 'attack') {
       this.endTurnText.setText('Start Fortify Phase')
-    } else if (window.gameVars.gamePhase === 'fortify') {
+    } else if (window.gameState.gamePhase === 'fortify') {
       this.endTurnText.setText('End Turn')
     } else {
       // Initial placement phase
@@ -449,21 +409,21 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     }
 
     // Update action text based on game phase
-    if (window.gameVars.gamePhase === 'initialPlacement') {
+    if (window.gameState.gamePhase === 'initialPlacement') {
       this.actionText.setText(
-        `Initial Placement\nPlayer ${window.gameVars.currentPlayerIndex + 1}'s turn\nRemaining: ${
+        `Initial Placement\nPlayer ${window.gameState.currentPlayerIndex + 1}'s turn\nRemaining: ${
           currentPlayer.reinforcements
         }`
       )
-    } else if (window.gameVars.gamePhase === 'placement') {
+    } else if (window.gameState.gamePhase === 'placement') {
       this.actionText.setText(
         `Player ${
-          window.gameVars.currentPlayerIndex + 1
+          window.gameState.currentPlayerIndex + 1
         }'s turn\nPlace your reinforcements\nRemaining: ${currentPlayer.reinforcements}`
       )
-    } else if (window.gameVars.gamePhase === 'attack') {
+    } else if (window.gameState.gamePhase === 'attack') {
       this.actionText.setText('Select your territory to attack from')
-    } else if (window.gameVars.gamePhase === 'fortify') {
+    } else if (window.gameState.gamePhase === 'fortify') {
       this.actionText.setText('Select territory to move armies from or end turn')
     }
   }
@@ -479,51 +439,51 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
 
   endTurn() {
     // Handle different phase transitions
-    if (window.gameVars.gamePhase === 'placement') {
+    if (window.gameState.gamePhase === 'placement') {
       // From placement -> attack (same player)
-      window.gameVars.gamePhase = 'attack'
+      window.gameState.gamePhase = 'attack'
 
-      //  phase transition animation
+      // Phase transition animation
       this.createPhaseTransitionAnimation('attack')
 
       this.updateGameInfo()
       return
-    } else if (window.gameVars.gamePhase === 'attack') {
+    } else if (window.gameState.gamePhase === 'attack') {
       // From attack -> fortify (same player)
-      window.gameVars.gamePhase = 'fortify'
+      window.gameState.gamePhase = 'fortify'
       this.hasFortified = false
 
-      //  phase transition animation
+      // Phase transition animation
       this.createPhaseTransitionAnimation('fortify')
 
       // Reset selections
-      if (window.gameVars.selectedTerritory) {
-        window.gameVars.selectedTerritory.setSelected(false)
+      if (window.gameState.selectedTerritoryId !== null) {
+        this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+        window.gameState.selectedTerritoryId = null
       }
-      window.gameVars.selectedTerritory = null
-      window.gameVars.targetTerritory = null
+      window.gameState.targetTerritoryId = null
 
       this.updateGameInfo()
       return
-    } else if (window.gameVars.gamePhase === 'fortify') {
+    } else if (window.gameState.gamePhase === 'fortify') {
       // Reset selected territories
-      if (window.gameVars.selectedTerritory) {
-        window.gameVars.selectedTerritory.setSelected(false)
+      if (window.gameState.selectedTerritoryId !== null) {
+        this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+        window.gameState.selectedTerritoryId = null
       }
-      window.gameVars.selectedTerritory = null
-      window.gameVars.targetTerritory = null
+      window.gameState.targetTerritoryId = null
 
       // Find the next active player (not eliminated)
       let nextPlayerFound = false
-      let nextPlayerIndex = window.gameVars.currentPlayerIndex
-      const playerCount = window.gameVars.players.length
+      let nextPlayerIndex = window.gameState.currentPlayerIndex
+      const playerCount = window.gameState.players.length
 
       for (let i = 1; i <= playerCount; i++) {
         // Calculate next player index with wrapping
-        nextPlayerIndex = (window.gameVars.currentPlayerIndex + i) % playerCount
+        nextPlayerIndex = (window.gameState.currentPlayerIndex + i) % playerCount
 
         // Check if this player is still in the game
-        if (!window.gameVars.players[nextPlayerIndex].eliminated) {
+        if (!window.gameState.players[nextPlayerIndex].eliminated) {
           nextPlayerFound = true
           break
         }
@@ -532,22 +492,22 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
       // If no active players found besides current one, game is over
       if (!nextPlayerFound) {
         // Current player wins!
-        this.gameOver(window.gameVars.currentPlayerIndex)
+        this.gameOver(window.gameState.currentPlayerIndex)
         return
       }
 
       // Move to the next active player
-      window.gameVars.currentPlayerIndex = nextPlayerIndex
-      const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex]
+      window.gameState.currentPlayerIndex = nextPlayerIndex
+      const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
       // Calculate reinforcements including continent bonuses for the new player
       currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer)
 
       // Create player turn change animation
-      this.createPlayerTurnAnimation(window.gameVars.currentPlayerIndex)
+      this.createPlayerTurnAnimation(window.gameState.currentPlayerIndex)
 
       // Move to placement phase for next player
-      window.gameVars.gamePhase = 'placement'
+      window.gameState.gamePhase = 'placement'
 
       // Add slight delay, then show placement phase animation
       this.time.delayedCall(1500, () => {
@@ -611,26 +571,26 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     })
   }
 
-  handleTerritoryClick(territory: TerritoryInterface) {
-    const currentPlayer = window.gameVars.players[window.gameVars.currentPlayerIndex]
+  handleTerritoryClick(territory: Territory) {
+    const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
     // INITIAL PLACEMENT PHASE
-    if (window.gameVars.gamePhase === 'initialPlacement') {
+    if (window.gameState.gamePhase === 'initialPlacement') {
       if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
         // Place an army
-        territory.addArmies(1)
+        this.territoryManager.addTerritoryArmies(territory.id, 1)
         currentPlayer.reinforcements--
         this.updateGameInfo()
 
         // If current player has placed all armies, move to next player
         if (currentPlayer.reinforcements === 0) {
           // Move to the next player
-          window.gameVars.currentPlayerIndex =
-            (window.gameVars.currentPlayerIndex + 1) % window.gameVars.players.length
+          window.gameState.currentPlayerIndex =
+            (window.gameState.currentPlayerIndex + 1) % window.gameState.players.length
 
           // Check if all players have placed their initial armies
           let allPlaced = true
-          for (const player of window.gameVars.players) {
+          for (const player of window.gameState.players) {
             if (player.reinforcements > 0) {
               allPlaced = false
               break
@@ -639,12 +599,12 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
 
           // If all players have placed their armies, start regular game flow
           if (allPlaced) {
-            window.gameVars.initialPlacementDone = true
-            window.gameVars.gamePhase = 'placement'
+            window.gameState.initialPlacementDone = true
+            window.gameState.gamePhase = 'placement'
 
             // Reset to first player and give reinforcements
-            window.gameVars.currentPlayerIndex = 0
-            const firstPlayer = window.gameVars.players[0]
+            window.gameState.currentPlayerIndex = 0
+            const firstPlayer = window.gameState.players[0]
             firstPlayer.reinforcements = this.calculateReinforcements(firstPlayer)
 
             // Enable end phase button
@@ -657,10 +617,10 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
       }
     }
     // REGULAR PLACEMENT PHASE
-    else if (window.gameVars.gamePhase === 'placement') {
+    else if (window.gameState.gamePhase === 'placement') {
       if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
         // Place an army
-        territory.addArmies(1)
+        this.territoryManager.addTerritoryArmies(territory.id, 1)
         currentPlayer.reinforcements--
         this.updateGameInfo()
 
@@ -674,12 +634,12 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
       }
     }
     // ATTACK PHASE
-    else if (window.gameVars.gamePhase === 'attack') {
-      if (window.gameVars.selectedTerritory === null) {
-        // selecting the attacking territory
+    else if (window.gameState.gamePhase === 'attack') {
+      if (window.gameState.selectedTerritoryId === null) {
+        // Selecting the attacking territory
         if (territory.owner === currentPlayer.id && territory.armies > 1) {
-          window.gameVars.selectedTerritory = territory
-          territory.setSelected(true)
+          window.gameState.selectedTerritoryId = territory.id
+          this.territoryManager.setTerritorySelected(territory.id, true)
           this.actionText.setText('Select an adjacent territory to attack')
         } else if (territory.owner === currentPlayer.id && territory.armies <= 1) {
           this.actionText.setText('Need at least 2 armies to attack')
@@ -688,58 +648,146 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
         // Selecting the defending territory and attack
         if (
           territory.owner !== currentPlayer.id &&
-          this.areAdjacent(window.gameVars.selectedTerritory.id, territory.id)
+          this.territoryManager.areAdjacent(window.gameState.selectedTerritoryId, territory.id)
         ) {
-          window.gameVars.targetTerritory = territory
+          window.gameState.targetTerritoryId = territory.id
           this.resolveAttack()
-        } else if (territory === window.gameVars.selectedTerritory) {
-          window.gameVars.selectedTerritory.setSelected(false)
-          window.gameVars.selectedTerritory = null
+        } else if (territory.id === window.gameState.selectedTerritoryId) {
+          this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+          window.gameState.selectedTerritoryId = null
           this.actionText.setText('Select your territory to attack from')
         } else {
           // Invalid target, reset selection
-          window.gameVars.selectedTerritory.setSelected(false)
-          window.gameVars.selectedTerritory = null
+          if (window.gameState.selectedTerritoryId !== null) {
+            this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+            window.gameState.selectedTerritoryId = null
+          }
           this.actionText.setText('Invalid target. Select your territory to attack from')
         }
       }
     }
     // FORTIFY PHASE
-    else if (window.gameVars.gamePhase === 'fortify') {
+    else if (window.gameState.gamePhase === 'fortify') {
       if (this.hasFortified) {
         this.actionText.setText("You've already fortified this turn. Please end your turn.")
         return
       }
 
-      if (window.gameVars.selectedTerritory === null) {
+      if (window.gameState.selectedTerritoryId === null) {
         // Selecting the source territory
         if (territory.owner === currentPlayer.id && territory.armies > 1) {
-          window.gameVars.selectedTerritory = territory
-          territory.setSelected(true)
+          window.gameState.selectedTerritoryId = territory.id
+          this.territoryManager.setTerritorySelected(territory.id, true)
           this.actionText.setText('Select an adjacent friendly territory to fortify')
         }
       } else {
         // Selection the destination territory
         if (
           territory.owner === currentPlayer.id &&
-          territory !== window.gameVars.selectedTerritory &&
-          this.areAdjacent(window.gameVars.selectedTerritory.id, territory.id)
+          territory.id !== window.gameState.selectedTerritoryId &&
+          this.territoryManager.areAdjacent(window.gameState.selectedTerritoryId, territory.id)
         ) {
-          window.gameVars.targetTerritory = territory
+          window.gameState.targetTerritoryId = territory.id
           this.fortifyTerritory()
-        } else if (territory === window.gameVars.selectedTerritory) {
+        } else if (territory.id === window.gameState.selectedTerritoryId) {
           // Deselect
-          window.gameVars.selectedTerritory.setSelected(false)
-          window.gameVars.selectedTerritory = null
+          this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+          window.gameState.selectedTerritoryId = null
           this.actionText.setText('Select territory to move armies from or end turn')
         } else {
           // Invalid target, reset selection
-          window.gameVars.selectedTerritory.setSelected(false)
-          window.gameVars.selectedTerritory = null
+          if (window.gameState.selectedTerritoryId !== null) {
+            this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+            window.gameState.selectedTerritoryId = null
+          }
           this.actionText.setText('Invalid target. Select territory to move armies or end turn')
         }
       }
     }
+  }
+
+  resolveAttack() {
+    if (
+      window.gameState.selectedTerritoryId === null ||
+      window.gameState.targetTerritoryId === null
+    ) {
+      return
+    }
+
+    const attackerTerritory = this.territoryManager.getTerritory(
+      window.gameState.selectedTerritoryId
+    )
+    const defenderTerritory = this.territoryManager.getTerritory(window.gameState.targetTerritoryId)
+
+    if (!attackerTerritory || !defenderTerritory) return
+
+    // Maximum number of dice
+    const maxAttackerDice = Math.min(3, attackerTerritory.armies - 1)
+    const maxDefenderDice = Math.min(2, defenderTerritory.armies)
+
+    // Roll dice
+    const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a)
+    const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a)
+
+    // Display dice results visually
+    this.showDiceRoll(attackerDice, defenderDice)
+
+    // Compare dice pairs
+    let attackerLosses = 0
+    let defenderLosses = 0
+
+    for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
+      if (attackerDice[i] > defenderDice[i]) {
+        defenderLosses++
+      } else {
+        attackerLosses++
+      }
+    }
+
+    // Apply losses
+    this.territoryManager.removeTerritoryArmies(
+      window.gameState.selectedTerritoryId,
+      attackerLosses
+    )
+    this.territoryManager.removeTerritoryArmies(window.gameState.targetTerritoryId, defenderLosses)
+
+    // Update text with results
+    this.actionText.setText(
+      `Battle results\n` +
+        `Attacker lost ${attackerLosses} armies\n` +
+        `Defender lost ${defenderLosses} armies`
+    )
+
+    // Check if defender was defeated
+    if (defenderTerritory.armies - defenderLosses <= 0) {
+      // Calculate armies to move (all but 1 from attacker)
+      const armiesToMove = attackerTerritory.armies - attackerLosses - 1
+
+      // Capture the territory
+      this.territoryManager.captureTerritory(
+        window.gameState.selectedTerritoryId,
+        window.gameState.targetTerritoryId,
+        armiesToMove
+      )
+    }
+
+    // Reset selections
+    if (window.gameState.selectedTerritoryId !== null) {
+      this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+    }
+    window.gameState.selectedTerritoryId = null
+    window.gameState.targetTerritoryId = null
+
+    // Check for game over
+    this.checkGameOver()
+  }
+
+  rollDice(count: number): number[] {
+    const results = []
+    for (let i = 0; i < count; i++) {
+      results.push(Math.floor(Math.random() * 6) + 1)
+    }
+    return results
   }
 
   createDiceDisplay() {
@@ -808,94 +856,6 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
       this.diceContainer.add(winIndicator)
       this.resultIndicators.push(winIndicator)
     }
-  }
-
-  areAdjacent(territory1Id: number, territory2Id: number): boolean {
-    return this.adjacencyMap[territory1Id].includes(territory2Id)
-  }
-
-  calculateReinforcements(player: Player): number {
-    // Base reinforcements from territories
-    let reinforcements = Math.max(Math.floor(player.territories.length / 3), 3)
-
-    // Add bonuses for continents
-    for (const continent in this.continents) {
-      const continentTerritories = this.continents[continent].territories
-      const bonus = this.continents[continent].bonus
-
-      // Check if player owns all territories in the continent
-      const ownsAll = continentTerritories.every((territoryId) =>
-        player.territories.includes(territoryId)
-      )
-
-      if (ownsAll) {
-        reinforcements += bonus
-      }
-    }
-
-    return reinforcements
-  }
-
-  resolveAttack() {
-    const attacker = window.gameVars.selectedTerritory as Territory
-    const defender = window.gameVars.targetTerritory as Territory
-
-    if (!attacker || !defender) return
-
-    // Maximum number of dice
-    const maxAttackerDice = Math.min(3, attacker.armies - 1)
-    const maxDefenderDice = Math.min(2, defender.armies)
-
-    // Roll dice
-    const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a)
-    const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a)
-
-    // Display dice results visually
-    this.showDiceRoll(attackerDice, defenderDice)
-
-    // Compare dice pairs
-    let attackerLosses = 0
-    let defenderLosses = 0
-
-    for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
-      if (attackerDice[i] > defenderDice[i]) {
-        defenderLosses++
-      } else {
-        attackerLosses++
-      }
-    }
-
-    // Apply losses
-    attacker.removeArmies(attackerLosses)
-    defender.removeArmies(defenderLosses)
-
-    // Update text with results
-    this.actionText.setText(
-      `Battle results\n` +
-        `Attacker lost ${attackerLosses} armies\n` +
-        `Defender lost ${defenderLosses} armies`
-    )
-
-    // Check if defender was defeated
-    if (defender.armies <= 0) {
-      this.captureTerritory(attacker, defender)
-    }
-
-    // Reset selections
-    attacker.setSelected(false)
-    window.gameVars.selectedTerritory = null
-    window.gameVars.targetTerritory = null
-
-    // Check for game over
-    this.checkGameOver()
-  }
-
-  rollDice(count: number): number[] {
-    const results = []
-    for (let i = 0; i < count; i++) {
-      results.push(Math.floor(Math.random() * 6) + 1)
-    }
-    return results
   }
 
   showDiceRoll(attackerDice: number[], defenderDice: number[]) {
@@ -1098,164 +1058,16 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     })
   }
 
-  captureTerritory(attacker: Territory, defender: Territory) {
-    const attackerPlayer = window.gameVars.players[attacker.owner!]
-    const defenderPlayer = window.gameVars.players[defender.owner!]
-
-    if (!attackerPlayer || !defenderPlayer) return
-
-    // Remove territory from defender's list
-    const index = defenderPlayer.territories.indexOf(defender.id)
-    if (index > -1) {
-      defenderPlayer.territories.splice(index, 1)
-    }
-
-    // Add territory to attacker's list
-    attackerPlayer.territories.push(defender.id)
-
-    // capture animation before changing ownership
-    this.createCaptureAnimation(defender, attackerPlayer)
-
-    // Transfer ownership and move armies (with delay so animation shows first)
-    this.time.delayedCall(500, () => {
-      defender.setOwner(attackerPlayer)
-
-      // Move armies (minimum of 1, up to attacker.armies - 1)
-      const armiesToMove = Math.max(attacker.armies - 1, 1)
-      defender.setArmies(armiesToMove)
-      attacker.setArmies(1)
-    })
-
-    this.actionText.setText(`You captured ${defender.name}!`)
-
-    // Check if the defender player has been eliminated
-    if (defenderPlayer.territories.length === 0) {
-      defenderPlayer.eliminated = true
-      this.showPlayerEliminationMessage(defenderPlayer.id)
-    }
-  }
-
-  createPlayerTurnAnimation(playerIndex: number) {
-    const player = window.gameVars.players[playerIndex]
-
-    // Convert numeric color to hex string
-    const colorString = this.hexNumToHexString(player.color)
-
-    // Create the player turn announcement
-    const playerText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 - 40,
-        'PLAYER ' + (playerIndex + 1) + "'S TURN",
-        {
-          fontSize: '52px',
-          fontStyle: 'bold',
-          color: colorString,
-          stroke: '#000000',
-          strokeThickness: 6,
-          align: 'center',
-        }
-      )
-      .setOrigin(0.5)
-
-    // Create reinforcements text
-    const reinforcementsText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 + 30,
-        `Reinforcements: ${player.reinforcements}`,
-        {
-          fontSize: '32px',
-          color: '#FFFFFF',
-          stroke: '#000000',
-          strokeThickness: 4,
-          align: 'center',
-        }
-      )
-      .setOrigin(0.5)
-
-    // Set initial properties for animation
-    playerText.setAlpha(0)
-    playerText.setScale(0.5)
-    reinforcementsText.setAlpha(0)
-    reinforcementsText.setScale(0.5)
-
-    // Set high depth to appear above everything
-    playerText.setDepth(1000)
-    reinforcementsText.setDepth(1000)
-
-    // First tween - fade in and scale up
-    this.tweens.add({
-      targets: [playerText, reinforcementsText],
-      alpha: 1,
-      scale: 1,
-      duration: 800,
-      ease: 'Sine.easeOut',
-      onComplete: () => {
-        // Hold for a moment, then fade out
-        this.time.delayedCall(1200, () => {
-          // Fade out and scale up more
-          this.tweens.add({
-            targets: [playerText, reinforcementsText],
-            alpha: 0,
-            scale: 1.3,
-            duration: 500,
-            ease: 'Sine.easeIn',
-            onComplete: () => {
-              playerText.destroy()
-              reinforcementsText.destroy()
-            },
-          })
-        })
-      },
-    })
-  }
-
-  createCaptureAnimation(territory: Territory, newOwner: Player) {
-    // Create a flash effect
-    const flash = this.add.circle(
-      territory.territoryImage.x,
-      territory.territoryImage.y,
-      50,
-      newOwner.color,
-      0.7
-    )
-    flash.setDepth(300)
-
-    // Add animation for the flash
-    this.tweens.add({
-      targets: flash,
-      radius: 100,
-      alpha: 0,
-      duration: 800,
-      ease: 'Sine.easeOut',
-      onComplete: () => {
-        flash.destroy()
-      },
-    })
-
-    // Also make territory briefly glow
-    territory.territoryImage.setTint(newOwner.color)
-
-    // Add a scale pulse animation
-    this.tweens.add({
-      targets: territory.territoryImage,
-      scaleX: territory.originalScale * 1.3,
-      scaleY: territory.originalScale * 1.3,
-      duration: 300,
-      yoyo: true,
-      repeat: 1,
-      ease: 'Sine.easeInOut',
-      onComplete: () => {
-        territory.territoryImage.clearTint()
-        territory.territoryImage.setScale(territory.originalScale)
-      },
-    })
-  }
-
   fortifyTerritory() {
-    const source = window.gameVars.selectedTerritory as Territory
-    const destination = window.gameVars.targetTerritory as Territory
+    if (
+      window.gameState.selectedTerritoryId === null ||
+      window.gameState.targetTerritoryId === null
+    ) {
+      return
+    }
+
+    const source = this.territoryManager.getTerritory(window.gameState.selectedTerritoryId)
+    const destination = this.territoryManager.getTerritory(window.gameState.targetTerritoryId)
 
     if (!source || !destination) return
 
@@ -1263,9 +1075,9 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
       this.actionText.setText('Not enough armies to fortify')
 
       // Reset selections
-      source.setSelected(false)
-      window.gameVars.selectedTerritory = null
-      window.gameVars.targetTerritory = null
+      this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
+      window.gameState.selectedTerritoryId = null
+      window.gameState.targetTerritoryId = null
       return
     }
 
@@ -1567,8 +1379,9 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
         ease: 'Sine.easeInOut',
         onComplete: () => {
           // Move the armies
-          source.removeArmies(currentArmies)
-          destination.addArmies(currentArmies)
+          this.territoryManager.removeTerritoryArmies(source.id, currentArmies)
+          this.territoryManager.addTerritoryArmies(destination.id, currentArmies)
+
           this.actionText.setText(
             `Moved ${currentArmies} armies from ${source.name} to ${destination.name}. You cannot fortify again this turn.`
           )
@@ -1581,9 +1394,9 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
           uiElements.forEach((element) => element.destroy())
 
           // Reset selections
-          source.setSelected(false)
-          window.gameVars.selectedTerritory = null
-          window.gameVars.targetTerritory = null
+          this.territoryManager.setTerritorySelected(source.id, false)
+          window.gameState.selectedTerritoryId = null
+          window.gameState.targetTerritoryId = null
         },
       })
     })
@@ -1605,9 +1418,9 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
           uiElements.forEach((element) => element.destroy())
 
           // Reset selections
-          source.setSelected(false)
-          window.gameVars.selectedTerritory = null
-          window.gameVars.targetTerritory = null
+          this.territoryManager.setTerritorySelected(source.id, false)
+          window.gameState.selectedTerritoryId = null
+          window.gameState.targetTerritoryId = null
 
           this.actionText.setText('Fortify canceled')
         },
@@ -1618,11 +1431,109 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     updateArmySelection(currentArmies)
   }
 
+  calculateReinforcements(player: Player): number {
+    // Base reinforcements from territories
+    let reinforcements = Math.max(Math.floor(player.territories.length / 3), 3)
+
+    // Add bonuses for continents
+    for (const continent in this.continents) {
+      const continentTerritories = this.continents[continent].territories
+      const bonus = this.continents[continent].bonus
+
+      // Check if player owns all territories in the continent
+      const ownsAll = continentTerritories.every((territoryId) =>
+        player.territories.includes(territoryId)
+      )
+
+      if (ownsAll) {
+        reinforcements += bonus
+      }
+    }
+
+    return reinforcements
+  }
+
+  createPlayerTurnAnimation(playerIndex: number) {
+    const player = window.gameState.players[playerIndex]
+
+    // Convert numeric color to hex string
+    const colorString = this.hexNumToHexString(player.color)
+
+    // Create the player turn announcement
+    const playerText = this.add
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 - 40,
+        'PLAYER ' + (playerIndex + 1) + "'S TURN",
+        {
+          fontSize: '52px',
+          fontStyle: 'bold',
+          color: colorString,
+          stroke: '#000000',
+          strokeThickness: 6,
+          align: 'center',
+        }
+      )
+      .setOrigin(0.5)
+
+    // Create reinforcements text
+    const reinforcementsText = this.add
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 + 30,
+        `Reinforcements: ${player.reinforcements}`,
+        {
+          fontSize: '32px',
+          color: '#FFFFFF',
+          stroke: '#000000',
+          strokeThickness: 4,
+          align: 'center',
+        }
+      )
+      .setOrigin(0.5)
+
+    // Set initial properties for animation
+    playerText.setAlpha(0)
+    playerText.setScale(0.5)
+    reinforcementsText.setAlpha(0)
+    reinforcementsText.setScale(0.5)
+
+    // Set high depth to appear above everything
+    playerText.setDepth(1000)
+    reinforcementsText.setDepth(1000)
+
+    // First tween - fade in and scale up
+    this.tweens.add({
+      targets: [playerText, reinforcementsText],
+      alpha: 1,
+      scale: 1,
+      duration: 800,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        // Hold for a moment, then fade out
+        this.time.delayedCall(1200, () => {
+          // Fade out and scale up more
+          this.tweens.add({
+            targets: [playerText, reinforcementsText],
+            alpha: 0,
+            scale: 1.3,
+            duration: 500,
+            ease: 'Sine.easeIn',
+            onComplete: () => {
+              playerText.destroy()
+              reinforcementsText.destroy()
+            },
+          })
+        })
+      },
+    })
+  }
+
   checkGameOver() {
     let activePlayers = 0
     let lastActivePlayerIndex = -1
 
-    window.gameVars.players.forEach((player, index) => {
+    window.gameState.players.forEach((player, index) => {
       if (!player.eliminated) {
         activePlayers++
         lastActivePlayerIndex = index
@@ -1636,8 +1547,8 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     }
 
     // Also check if any player has conquered all territories
-    window.gameVars.players.forEach((player, index) => {
-      if (player.territories.length === this.territories.length) {
+    window.gameState.players.forEach((player, index) => {
+      if (player.territories.length === territoriesData.length) {
         this.gameOver(index)
       }
     })
@@ -1667,7 +1578,7 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     this.add
       .text(600, 425, `Player ${winnerIndex + 1} Wins!`, {
         fontSize: '32px',
-        color: this.hexNumToHexString(window.gameVars.players[winnerIndex].color),
+        color: this.hexNumToHexString(window.gameState.players[winnerIndex].color),
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1723,7 +1634,7 @@ export class GameScene extends Phaser.Scene implements TerritoryHandler {
     const message = this.add
       .text(0, -30, `Player ${playerId + 1} Eliminated!`, {
         fontSize: '28px',
-        color: this.hexNumToHexString(window.gameVars.players[playerId].color),
+        color: this.hexNumToHexString(window.gameState.players[playerId].color),
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
