@@ -92,6 +92,7 @@ class GameScene extends Phaser.Scene {
         this.actionText = null;
         this.diceResults = [];
         this.continents = continentsData;
+        this.hasFortified = false;
     }
 
     create() {
@@ -455,6 +456,7 @@ class GameScene extends Phaser.Scene {
         else if (window.gameVars.gamePhase === "attack") {
             // From attack -> fortify (same player)
             window.gameVars.gamePhase = "fortify";
+            this.hasFortified = false;
 
             //  phase transition animation
             this.createPhaseTransitionAnimation("fortify");
@@ -641,6 +643,11 @@ class GameScene extends Phaser.Scene {
         }
         // FORTIFY PHASE
         else if (window.gameVars.gamePhase === "fortify") {
+            if (this.hasFortified) {
+                this.actionText.setText("You've already fortified this turn. Please end your turn.");
+                return;
+            }
+
             if (window.gameVars.selectedTerritory === null) {
                 // Selecting the source territory
                 if (territory.owner === currentPlayer.id && territory.armies > 1) {
@@ -669,6 +676,7 @@ class GameScene extends Phaser.Scene {
                 }
             }
         }
+
     }
 
     areAdjacent(territory1Id, territory2Id) {
@@ -1606,7 +1614,9 @@ class GameScene extends Phaser.Scene {
                     // Move the armies
                     source.removeArmies(currentArmies);
                     destination.addArmies(currentArmies);
-                    this.actionText.setText(`Moved ${currentArmies} armies from ${source.name} to ${destination.name}`);
+                    this.actionText.setText(`Moved ${currentArmies} armies from ${source.name} to ${destination.name}. You cannot fortify again this turn.`);
+
+                    this.hasFortified = true;
 
                     // Clean up UI and event listeners
                     this.input.off('drag');
