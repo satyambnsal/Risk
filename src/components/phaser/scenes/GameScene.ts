@@ -1321,12 +1321,7 @@ export class GameScene extends Phaser.Scene {
     // Slider drag
     this.input.on(
       'drag',
-      (
-        pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.GameObjects.GameObject,
-        dragX: number,
-        dragY: number
-      ) => {
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Rectangle, dragX: number) => {
         if (gameObject === sliderHandle) {
           // Constrain x position to slider bounds
           const minX = this.cameras.main.width / 2 - 100
