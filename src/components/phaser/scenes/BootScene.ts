@@ -10,7 +10,7 @@ export class BootScene extends Phaser.Scene {
     this.add
       .text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'Loading...', {
         fontSize: '32px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
 
@@ -29,7 +29,7 @@ export class BootScene extends Phaser.Scene {
     const percentText = this.add
       .text(this.cameras.main.width / 2, this.cameras.main.height / 2 + 55, '0%', {
         fontSize: '18px',
-        fill: '#FFFFFF',
+        color: '#FFFFFF',
       })
       .setOrigin(0.5)
 
@@ -39,7 +39,7 @@ export class BootScene extends Phaser.Scene {
     const numTerritories = 25 // Total number of territories from the design
 
     for (let i = 0; i < numTerritories; i++) {
-      for (let color of colors) {
+      for (const color of colors) {
         this.load.image(
           `territory-${i}-${color}`,
           `/assets/images/territories/territory-${i}-${color}.png`

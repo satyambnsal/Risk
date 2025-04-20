@@ -212,7 +212,7 @@ export class Territory {
         .text(this.territoryImage.x + 20, this.territoryImage.y - 20, sign + Math.abs(count), {
           fontSize: '24px',
           fontStyle: 'bold',
-          fill: color,
+          color: color,
           stroke: '#000000',
           strokeThickness: 3,
         })

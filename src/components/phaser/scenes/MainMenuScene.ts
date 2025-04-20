@@ -38,7 +38,7 @@ export class MainMenuScene extends Phaser.Scene {
     const titleText = this.add
       .text(this.cameras.main.width / 2, 100, 'RISK GAME', {
         fontSize: '64px',
-        fill: '#FFF',
+        color: '#FFF',
         fontStyle: 'bold',
         stroke: '#000',
         strokeThickness: 8,
@@ -68,7 +68,7 @@ export class MainMenuScene extends Phaser.Scene {
     const selectionText = this.add
       .text(this.cameras.main.width / 2, 200, 'Select number of players:', {
         fontSize: '24px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setAlpha(0)
@@ -136,7 +136,7 @@ export class MainMenuScene extends Phaser.Scene {
       const text = this.add
         .text(this.cameras.main.width / 2, 350 + i * 30, instructions[i], {
           fontSize: '18px',
-          fill: '#FFF',
+          color: '#FFF',
         })
         .setOrigin(0.5)
         .setAlpha(0)

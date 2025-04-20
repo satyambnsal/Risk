@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { Territory } from '../objects/Territory'
-import { TerritoryData, ContinentData } from '../types'
+import { TerritoryData, ContinentData, Player } from '../types'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -181,7 +181,7 @@ export class GameScene extends Phaser.Scene {
     this.phaseText = this.add
       .text(950, 100, 'Phase: Placement', {
         fontSize: '20px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
 
@@ -189,7 +189,7 @@ export class GameScene extends Phaser.Scene {
     this.playerText = this.add
       .text(950, 140, 'Player: 1', {
         fontSize: '20px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
 
@@ -197,7 +197,7 @@ export class GameScene extends Phaser.Scene {
     this.actionText = this.add
       .text(950, 180, 'Place your armies', {
         fontSize: '16px',
-        fill: '#FFF',
+        color: '#FFF',
         align: 'center',
         wordWrap: { width: 280 },
       })
@@ -207,7 +207,7 @@ export class GameScene extends Phaser.Scene {
     this.diceText = this.add
       .text(950, 240, '', {
         fontSize: '16px',
-        fill: '#FFF',
+        color: '#FFF',
         align: 'center',
       })
       .setOrigin(0.5)
@@ -217,7 +217,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(950, yPos, 'Continent Bonuses:', {
         fontSize: '16px',
-        fill: '#FFF',
+        color: '#FFF',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
@@ -227,7 +227,7 @@ export class GameScene extends Phaser.Scene {
       this.add
         .text(950, yPos, `${continent}: +${this.continents[continent].bonus}`, {
           fontSize: '14px',
-          fill: '#FFF',
+          color: '#FFF',
         })
         .setOrigin(0.5)
       yPos += 20
@@ -240,7 +240,7 @@ export class GameScene extends Phaser.Scene {
     this.endTurnText = this.add
       .text(950, 700, 'End Phase', {
         fontSize: '18px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
 
@@ -342,7 +342,7 @@ export class GameScene extends Phaser.Scene {
       .text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'ASSIGNING TERRITORIES', {
         fontSize: '40px',
         fontStyle: 'bold',
-        fill: '#FFFFFF',
+        color: '#FFFFFF',
         stroke: '#000000',
         strokeThickness: 6,
       })
@@ -567,7 +567,7 @@ export class GameScene extends Phaser.Scene {
         {
           fontSize: '64px',
           fontStyle: 'bold',
-          fill: '#FFFFFF',
+          color: '#FFFFFF',
           stroke: '#000000',
           strokeThickness: 6,
           align: 'center',
@@ -624,7 +624,7 @@ export class GameScene extends Phaser.Scene {
 
           // Check if all players have placed their initial armies
           let allPlaced = true
-          for (let player of window.gameVars.players) {
+          for (const player of window.gameVars.players) {
             if (player.reinforcements > 0) {
               allPlaced = false
               break
@@ -746,7 +746,7 @@ export class GameScene extends Phaser.Scene {
       this.add
         .text(0, -40, 'DICE BATTLE', {
           fontSize: '18px',
-          fill: '#FFFFFF',
+          color: '#FFFFFF',
           fontStyle: 'bold',
         })
         .setOrigin(0.5)
@@ -757,7 +757,7 @@ export class GameScene extends Phaser.Scene {
       this.add
         .text(-100, -20, 'Attacker', {
           fontSize: '14px',
-          fill: '#FF0000',
+          color: '#FF0000',
         })
         .setOrigin(0.5)
     )
@@ -767,7 +767,7 @@ export class GameScene extends Phaser.Scene {
       this.add
         .text(100, -20, 'Defender', {
           fontSize: '14px',
-          fill: '#0000FF',
+          color: '#0000FF',
         })
         .setOrigin(0.5)
     )
@@ -808,7 +808,7 @@ export class GameScene extends Phaser.Scene {
     return this.adjacencyMap[territory1Id].includes(territory2Id)
   }
 
-  calculateReinforcements(player: any): number {
+  calculateReinforcements(player: Player): number {
     // Base reinforcements from territories
     let reinforcements = Math.max(Math.floor(player.territories.length / 3), 3)
 
@@ -1144,7 +1144,7 @@ export class GameScene extends Phaser.Scene {
         {
           fontSize: '52px',
           fontStyle: 'bold',
-          fill: colorString,
+          color: colorString,
           stroke: '#000000',
           strokeThickness: 6,
           align: 'center',
@@ -1160,7 +1160,7 @@ export class GameScene extends Phaser.Scene {
         `Reinforcements: ${player.reinforcements}`,
         {
           fontSize: '32px',
-          fill: '#FFFFFF',
+          color: '#FFFFFF',
           stroke: '#000000',
           strokeThickness: 4,
           align: 'center',
@@ -1283,7 +1283,7 @@ export class GameScene extends Phaser.Scene {
         'Select Armies to Move',
         {
           fontSize: '24px',
-          fill: '#FFF',
+          color: '#FFF',
           fontStyle: 'bold',
         }
       )
@@ -1298,7 +1298,7 @@ export class GameScene extends Phaser.Scene {
         `From ${source.name} (${source.armies} armies) to ${destination.name} (${destination.armies} armies)`,
         {
           fontSize: '16px',
-          fill: '#FFF',
+          color: '#FFF',
         }
       )
       .setOrigin(0.5)
@@ -1316,7 +1316,7 @@ export class GameScene extends Phaser.Scene {
         `Armies to move: ${currentArmies}`,
         {
           fontSize: '20px',
-          fill: '#FFF',
+          color: '#FFF',
         }
       )
       .setOrigin(0.5)
@@ -1332,7 +1332,7 @@ export class GameScene extends Phaser.Scene {
     const minusText = this.add
       .text(this.cameras.main.width / 2 - 150, this.cameras.main.height / 2, '-', {
         fontSize: '24px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1347,7 +1347,7 @@ export class GameScene extends Phaser.Scene {
     const plusText = this.add
       .text(this.cameras.main.width / 2 + 150, this.cameras.main.height / 2, '+', {
         fontSize: '24px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1379,7 +1379,7 @@ export class GameScene extends Phaser.Scene {
     const minLabel = this.add
       .text(this.cameras.main.width / 2 - 110, this.cameras.main.height / 2 + 50, '1', {
         fontSize: '14px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(1, 0.5)
       .setDepth(1000)
@@ -1389,7 +1389,7 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.width / 2 + 110,
         this.cameras.main.height / 2 + 50,
         maxArmies.toString(),
-        { fontSize: '14px', fill: '#FFF' }
+        { fontSize: '14px', color: '#FFF' }
       )
       .setOrigin(0, 0.5)
       .setDepth(1000)
@@ -1410,7 +1410,7 @@ export class GameScene extends Phaser.Scene {
     const confirmText = this.add
       .text(this.cameras.main.width / 2 - 80, this.cameras.main.height / 2 + 100, 'Confirm', {
         fontSize: '18px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1431,7 +1431,7 @@ export class GameScene extends Phaser.Scene {
     const cancelText = this.add
       .text(this.cameras.main.width / 2 + 80, this.cameras.main.height / 2 + 100, 'Cancel', {
         fontSize: '18px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1653,7 +1653,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(600, 350, 'GAME OVER', {
         fontSize: '48px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1661,7 +1661,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(600, 425, `Player ${winnerIndex + 1} Wins!`, {
         fontSize: '32px',
-        fill: this.hexNumToHexString(window.gameVars.players[winnerIndex].color),
+        color: this.hexNumToHexString(window.gameVars.players[winnerIndex].color),
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1671,7 +1671,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(600, 500, 'Play Again', {
         fontSize: '24px',
-        fill: '#FFF',
+        color: '#FFF',
       })
       .setOrigin(0.5)
       .setDepth(1000)
@@ -1717,7 +1717,7 @@ export class GameScene extends Phaser.Scene {
     const message = this.add
       .text(0, -30, `Player ${playerId + 1} Eliminated!`, {
         fontSize: '28px',
-        fill: this.hexNumToHexString(window.gameVars.players[playerId].color),
+        color: this.hexNumToHexString(window.gameVars.players[playerId].color),
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
@@ -1726,7 +1726,7 @@ export class GameScene extends Phaser.Scene {
     const subtext = this.add
       .text(0, 10, 'Lost all territories and is out of the game', {
         fontSize: '18px',
-        fill: '#FFFFFF',
+        color: '#FFFFFF',
       })
       .setOrigin(0.5)
     messageBox.add(subtext)
@@ -1735,7 +1735,7 @@ export class GameScene extends Phaser.Scene {
     const buttonText = this.add
       .text(0, 60, 'Continue', {
         fontSize: '18px',
-        fill: '#FFFFFF',
+        color: '#FFFFFF',
       })
       .setOrigin(0.5)
 
