@@ -188,7 +188,7 @@ class Territory {
                 this.territoryImage.y - 20,
                 sign + Math.abs(count),
                 {
-                    fontSize: '18px',
+                    fontSize: '24px',
                     fontStyle: 'bold',
                     fill: color,
                     stroke: '#000000',
@@ -201,7 +201,7 @@ class Territory {
                 targets: changeText,
                 y: this.territoryImage.y - 200,
                 alpha: 0,
-                duration: 1600,
+                duration: 2400,
                 ease: 'Power2',
                 onComplete: () => {
                     changeText.destroy();
