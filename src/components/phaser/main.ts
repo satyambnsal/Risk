@@ -3,30 +3,6 @@ import { BootScene } from './scenes/BootScene'
 import { MainMenuScene } from './scenes/MainMenuScene'
 import { GameScene } from './scenes/GameScene'
 
-// Define global gameVars interface
-interface GameVars {
-  players: {
-    id: number
-    color: number
-    armies: number
-    territories: number[]
-    reinforcements: number
-    eliminated: boolean
-  }[]
-  currentPlayerIndex: number
-  gamePhase: string
-  selectedTerritory: any | null
-  targetTerritory: any | null
-  initialPlacementDone: boolean
-}
-
-// Initialize gameVars
-declare global {
-  interface Window {
-    gameVars: GameVars
-  }
-}
-
 // Initialize gameVars if not already done
 window.gameVars = {
   players: [],

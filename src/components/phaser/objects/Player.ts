@@ -1,7 +1,4 @@
-export interface ContinentData {
-  territories: number[]
-  bonus: number
-}
+import { ContinentData } from '../types'
 
 export class Player {
   public id: number

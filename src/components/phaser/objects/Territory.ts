@@ -1,12 +1,5 @@
 import * as Phaser from 'phaser'
-
-// Define the player interface needed for Territory
-interface Player {
-  id: number
-  color: number
-  territories: number[]
-  reinforcements: number
-}
+import { Player } from '../types'
 
 export class Territory {
   public scene: Phaser.Scene
@@ -146,7 +139,7 @@ export class Territory {
 
   removeArmies(count: number) {
     const previousCount = this.armies
-    this.armies = Math.max(0, this.armies - count)
+    this.armies = Math.max(0, previousCount - count)
     this.updateArmiesWithAnimation(-count)
   }
 

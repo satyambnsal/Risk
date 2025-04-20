@@ -1,47 +1,6 @@
 import * as Phaser from 'phaser'
 import { Territory } from '../objects/Territory'
-
-// Define types for game variables
-interface GameVars {
-  players: Player[]
-  currentPlayerIndex: number
-  gamePhase: 'initialPlacement' | 'placement' | 'attack' | 'fortify'
-  selectedTerritory: Territory | null
-  targetTerritory: Territory | null
-  initialPlacementDone: boolean
-}
-
-// Declare window with gameVars for global access
-declare global {
-  interface Window {
-    gameVars: GameVars
-  }
-}
-
-// Define types for continent data
-interface ContinentData {
-  territories: number[]
-  bonus: number
-}
-
-// Define types for territory data
-interface TerritoryData {
-  id: number
-  name: string
-  x: number
-  y: number
-  continent: string
-}
-
-// Define types for player
-interface Player {
-  id: number
-  color: number
-  armies: number
-  territories: number[]
-  reinforcements: number
-  eliminated: boolean
-}
+import { TerritoryData, ContinentData } from '../types'
 
 // Territory data
 const territoriesData: TerritoryData[] = [

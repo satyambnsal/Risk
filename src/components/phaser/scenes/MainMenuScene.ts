@@ -8,29 +8,6 @@ const instructions: string[] = [
   '4. Capture all territories to win!',
 ]
 
-// Interface for the global gameVars
-interface Player {
-  id: number
-  color: number
-  armies: number
-  territories: number[]
-  reinforcements: number
-  eliminated: boolean
-}
-
-declare global {
-  interface Window {
-    gameVars: {
-      players: Player[]
-      currentPlayerIndex: number
-      gamePhase: string
-      selectedTerritory: any | null
-      targetTerritory: any | null
-      initialPlacementDone: boolean
-    }
-  }
-}
-
 export class MainMenuScene extends Phaser.Scene {
   private buttonHoverSound!: Phaser.Sound.BaseSound
   private buttonClickSound!: Phaser.Sound.BaseSound
@@ -44,7 +21,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.buttonHoverSound = this.sound.add('button-hover')
     this.buttonClickSound = this.sound.add('button-click')
 
-    const background = this.add.rectangle(
+    this.add.rectangle(
       this.cameras.main.width / 2,
       this.cameras.main.height / 2,
       this.cameras.main.width,
@@ -181,18 +158,6 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   setupPlayers(numPlayers: number): void {
-    // Initialize gameVars if not already done
-    if (!window.gameVars) {
-      window.gameVars = {
-        players: [],
-        currentPlayerIndex: 0,
-        gamePhase: 'initialPlacement',
-        selectedTerritory: null,
-        targetTerritory: null,
-        initialPlacementDone: false,
-      }
-    }
-
     // Clear existing Players
     window.gameVars.players = []
 
@@ -213,6 +178,6 @@ export class MainMenuScene extends Phaser.Scene {
 
     // Reset game state
     window.gameVars.currentPlayerIndex = 0
-    window.gameVars.gamePhase = 'placement'
+    window.gameVars.gamePhase = 'initialPlacement'
   }
 }
