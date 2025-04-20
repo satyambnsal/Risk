@@ -4,7 +4,7 @@ const instructions: string[] = [
   'How to Play:',
   '1. Place your armies on territories.',
   '2. Attack adjacent enemy territories.',
-  '3. Fortify your position at the end of your turn.',
+  '3. Fortify your position by moving armies to any owned territory.',
   '4. Capture all territories to win!',
 ]
 

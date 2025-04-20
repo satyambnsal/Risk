@@ -678,14 +678,13 @@ export class GameScene extends Phaser.Scene {
         if (territory.owner === currentPlayer.id && territory.armies > 1) {
           window.gameState.selectedTerritoryId = territory.id
           this.territoryManager.setTerritorySelected(territory.id, true)
-          this.actionText.setText('Select an adjacent friendly territory to fortify')
+          this.actionText.setText('Select any friendly territory to fortify')
         }
       } else {
         // Selection the destination territory
         if (
           territory.owner === currentPlayer.id &&
-          territory.id !== window.gameState.selectedTerritoryId &&
-          this.territoryManager.areAdjacent(window.gameState.selectedTerritoryId, territory.id)
+          territory.id !== window.gameState.selectedTerritoryId
         ) {
           window.gameState.targetTerritoryId = territory.id
           this.fortifyTerritory()
