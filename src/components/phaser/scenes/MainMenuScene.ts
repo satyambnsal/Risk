@@ -36,7 +36,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     // Title with animation
     const titleText = this.add
-      .text(this.cameras.main.width / 2, 100, 'RISK GAME', {
+      .text(this.cameras.main.width / 2, 100, 'FOG OF NOIR', {
         fontSize: '64px',
         color: '#FFF',
         fontStyle: 'bold',

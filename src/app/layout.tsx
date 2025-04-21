@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Risk Game',
-  description: 'A Risk-style strategy game built with Next.js, TypeScript, and Phaser',
+  title: 'Fog of Noir',
+  description: 'A Fog of Noir strategy game built with Next.js, TypeScript, and Phaser',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

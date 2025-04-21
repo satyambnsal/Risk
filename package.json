@@ -1,7 +1,7 @@
 {
-  "name": "risk-game-nextjs",
+  "name": "fog-of-noir-nextjs",
   "version": "1.0.0",
-  "description": "A Risk-style game built with Next.js, TypeScript, and Phaser",
+  "description": "A Fog of Noir strategy game built with Next.js, TypeScript, and Phaser",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +10,7 @@
   },
   "keywords": [
     "game",
-    "risk",
+    "fog of noir",
     "phaser",
     "strategy",
     "nextjs",
