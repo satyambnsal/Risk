@@ -27,7 +27,12 @@
     "phaser": "^3.88.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.2.0"
+    "tailwind-merge": "^3.2.0",
+    "@aztec/bb.js": "^0.85.0",
+    "@noir-lang/acvm_js": "^1.0.0-beta.3",
+    "@noir-lang/noir_js": "^1.0.0-beta.3",
+    "@noir-lang/noir_wasm": "^1.0.0-beta.3",
+    "@noir-lang/noirc_abi": "^1.0.0-beta.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.4",
