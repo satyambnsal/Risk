@@ -10,12 +10,20 @@ import { GameInstructions } from './GameInstructions'
 import { Button } from './ui/button'
 import { InfoCircledIcon } from '@radix-ui/react-icons'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const Header = () => {
   return (
     <div className="flex items-center justify-between p-3 font-joti fixed top-0 left-0 right-0 w-full">
       <div>
-        <Link href="/">Fog of Noir</Link>
+        <Link href="/">
+          <Image
+            src="/assets/images/logo-lg.png"
+            width={79}
+            height={54}
+            alt="logo"
+          />
+        </Link>
       </div>
       <div>
         <Dialog>
