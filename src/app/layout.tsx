@@ -1,8 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Joti_One } from 'next/font/google'
 import './globals.css'
+import { Header } from '@/components/Header'
 
 const inter = Inter({ subsets: ['latin'] })
+const jotiOne = Joti_One({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-joti-one',
+})
 
 export const metadata: Metadata = {
   title: 'Fog of Noir',
@@ -12,7 +18,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-black text-white`}>{children}</body>
+      <body className={`${inter.className} ${jotiOne.variable} bg-black text-white`}>
+        <Header />
+        {/* <div className="pt-[60px]"> */}
+        {children}
+        {/* </div> */}
+      </body>
     </html>
   )
 }
