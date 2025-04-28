@@ -64,10 +64,98 @@ export class MainMenuScene extends Phaser.Scene {
       },
     })
 
+    this.createLobbyButtons()
+
+    this.createSinglePlayerButton()
+
+    this.createInstructions()
+  }
+
+  createLobbyButtons(): void {
+    // Multiplayer subtitle
+    const multiplayerText = this.add
+      .text(this.cameras.main.width / 2, 200, 'MULTIPLAYER', {
+        fontSize: '28px',
+        color: '#FFF',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
+
+    this.tweens.add({
+      targets: multiplayerText,
+      alpha: 1,
+      duration: 800,
+      delay: 300,
+      ease: 'Power2',
+    })
+
+    // Create Lobby Button
+    const createLobbyButton = this.add
+      .rectangle(this.cameras.main.width / 2 - 120, 250, 200, 50, 0x3333aa)
+      .setInteractive()
+
+    const createLobbyText = this.add
+      .text(this.cameras.main.width / 2 - 120, 250, 'Create Lobby', {
+        fontSize: '20px',
+        color: '#FFF',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+
+    createLobbyButton.on('pointerdown', () => {
+      this.buttonClickSound.play()
+      console.log('Creating lobby...')
+      this.scene.start('LobbyScene', { isHost: true })
+    })
+
+    this.setupButtonHoverEffects(createLobbyButton, createLobbyText)
+
+    // Join Lobby Button
+    const joinLobbyButton = this.add
+      .rectangle(this.cameras.main.width / 2 + 120, 250, 200, 50, 0x33aa33)
+      .setInteractive()
+
+    const joinLobbyText = this.add
+      .text(this.cameras.main.width / 2 + 120, 250, 'Join Lobby', {
+        fontSize: '20px',
+        color: '#FFF',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+
+    joinLobbyButton.on('pointerdown', () => {
+      this.buttonClickSound.play()
+      console.log('Joining lobby...')
+      this.scene.start('LobbyScene', { isHost: false })
+    })
+
+    this.setupButtonHoverEffects(joinLobbyButton, joinLobbyText)
+  }
+
+  createSinglePlayerButton(): void {
+    // Single player subtitle
+    const singlePlayerText = this.add
+      .text(this.cameras.main.width / 2, 330, 'SINGLE PLAYER', {
+        fontSize: '28px',
+        color: '#FFF',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setAlpha(0)
+
+    this.tweens.add({
+      targets: singlePlayerText,
+      alpha: 1,
+      duration: 800,
+      delay: 600,
+      ease: 'Power2',
+    })
+
     // Player selection text with fade-in
     const selectionText = this.add
-      .text(this.cameras.main.width / 2, 200, 'Select number of players:', {
-        fontSize: '24px',
+      .text(this.cameras.main.width / 2, 380, 'Select number of players:', {
+        fontSize: '20px',
         color: '#FFF',
       })
       .setOrigin(0.5)
@@ -77,11 +165,11 @@ export class MainMenuScene extends Phaser.Scene {
       targets: selectionText,
       alpha: 1,
       duration: 800,
-      delay: 300,
+      delay: 900,
       ease: 'Power2',
     })
 
-    // player number selection buttons with staggered animation
+    // Player number buttons
     const buttonStyle = {
       fontSize: '20px',
       fill: '#000',
@@ -90,11 +178,11 @@ export class MainMenuScene extends Phaser.Scene {
 
     for (let i = 2; i <= 6; i++) {
       const button = this.add
-        .rectangle(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, 80, 40, 0x33aa33)
+        .rectangle(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 430, 80, 40, 0x33aa33)
         .setInteractive()
 
       const text = this.add
-        .text(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, `${i}`, buttonStyle)
+        .text(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 430, `${i}`, buttonStyle)
         .setOrigin(0.5)
 
       button.on('pointerdown', () => {
@@ -103,39 +191,48 @@ export class MainMenuScene extends Phaser.Scene {
         this.scene.start('GameScene')
       })
 
-      button.on('pointerover', () => {
-        this.buttonHoverSound.play({ volume: 0.5 })
-        button.setFillStyle(0x44cc44)
-
-        this.tweens.add({
-          targets: [button, text],
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 100,
-          ease: 'Sine.easeOut',
-        })
-      })
-
-      button.on('pointerout', () => {
-        button.setFillStyle(0x33aa33)
-
-        // Reset scale on hover out
-        this.tweens.add({
-          targets: [button, text],
-          scaleX: 1,
-          scaleY: 1,
-          duration: 100,
-          ease: 'Sine.easeOut',
-        })
-      })
+      this.setupButtonHoverEffects(button, text)
     }
+  }
 
+  setupButtonHoverEffects(
+    button: Phaser.GameObjects.Rectangle,
+    text: Phaser.GameObjects.Text
+  ): void {
+    button.on('pointerover', () => {
+      this.buttonHoverSound.play({ volume: 0.5 })
+      button.setFillStyle(button.fillColor + 0x111111)
+
+      this.tweens.add({
+        targets: [button, text],
+        scaleX: 1.1,
+        scaleY: 1.1,
+        duration: 100,
+        ease: 'Sine.easeOut',
+      })
+    })
+
+    button.on('pointerout', () => {
+      button.setFillStyle(button.fillColor - 0x111111)
+
+      // Reset scale on hover out
+      this.tweens.add({
+        targets: [button, text],
+        scaleX: 1,
+        scaleY: 1,
+        duration: 100,
+        ease: 'Sine.easeOut',
+      })
+    })
+  }
+
+  createInstructions(): void {
     const instructionTextObjects: Phaser.GameObjects.Text[] = []
 
     for (let i = 0; i < instructions.length; i++) {
       const text = this.add
-        .text(this.cameras.main.width / 2, 350 + i * 30, instructions[i], {
-          fontSize: '18px',
+        .text(this.cameras.main.width / 2, 500 + i * 30, instructions[i], {
+          fontSize: '16px',
           color: '#FFF',
         })
         .setOrigin(0.5)
@@ -151,7 +248,7 @@ export class MainMenuScene extends Phaser.Scene {
       x: { from: this.cameras.main.width / 2 - 50, to: this.cameras.main.width / 2 },
       duration: 500,
       delay: function (i: number) {
-        return 800 + i * 200
+        return 1200 + i * 200
       },
       ease: 'Power2',
     })

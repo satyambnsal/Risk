@@ -10,6 +10,7 @@ import { Part1Room } from './rooms/Part1Room'
 import { Part2Room } from './rooms/Part2Room'
 import { Part3Room } from './rooms/Part3Room'
 import { Part4Room } from './rooms/Part4Room'
+import { LobbyRoom } from './rooms/LobbyRoom'
 
 let gameServerRef: Server
 let latencySimulationMs: number = 0
@@ -23,6 +24,7 @@ export default config({
     /**
      * Define your room handlers:
      */
+    gameServer.define('lobby', LobbyRoom)
     gameServer.define('part1_room', Part1Room)
     gameServer.define('part2_room', Part2Room)
     gameServer.define('part3_room', Part3Room)

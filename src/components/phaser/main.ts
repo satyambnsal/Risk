@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { BootScene } from './scenes/BootScene'
 import { MainMenuScene } from './scenes/MainMenuScene'
 import { GameScene } from './scenes/GameScene'
+import { LobbyScene } from './scenes/LobbyScene'
 
 // Initialize gameState if not already done
 window.gameState = {
@@ -19,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
   width: 1200,
   height: 800,
   parent: 'game-container',
-  scene: [BootScene, MainMenuScene, GameScene],
+  scene: [BootScene, MainMenuScene, LobbyScene, GameScene],
   scale: {
     autoCenter: Phaser.Scale.CENTER_BOTH,
     mode: Phaser.Scale.FIT,
@@ -35,7 +36,5 @@ const config: Phaser.Types.Core.GameConfig = {
 
 // Create the game instance
 export function createGame(): Phaser.Game {
-  window.gameEvents = new Phaser.Events.EventEmitter()
-
   return new Phaser.Game(config)
 }
