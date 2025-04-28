@@ -35,7 +35,7 @@ export class BootScene extends Phaser.Scene {
 
     this.load.image('world-map', '/assets/images/world-map.png')
 
-    const colors = ['neutral', 'red', 'blue', 'green', 'yellow', 'purple', 'cyan']
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple']
     const numTerritories = 25 // Total number of territories from the design
 
     for (let i = 0; i < numTerritories; i++) {
