@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { TerritoryManager } from '../objects/TerritoryManager'
 import { Territory } from '../objects/Territory'
 import { TerritoryData, ContinentData, Player } from '../types'
+import { NetworkManager } from '../network/NetworkManager'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -103,6 +104,9 @@ export class GameScene extends Phaser.Scene {
   private attackerDiceSprites: Phaser.GameObjects.Sprite[] = []
   private defenderDiceSprites: Phaser.GameObjects.Sprite[] = []
   private resultIndicators: Phaser.GameObjects.Text[] = []
+  private networkManager!: NetworkManager
+  private isLocalPlayerTurn: boolean = false
+  private myPlayerId: number = -1
 
   constructor() {
     super({ key: 'GameScene' })
@@ -140,21 +144,131 @@ export class GameScene extends Phaser.Scene {
     // Create action button
     this.setupButtons()
 
-    // Start the initial placement phase
-    this.startPlacementPhase()
+    // Initialize network manager
+    this.networkManager = new NetworkManager(this)
+    this.initializeNetworking()
+  }
 
-    window.gameEvents.on('territoryClicked', (data) => {
-      // Handle based on phase - exactly like you do now
+  private async initializeNetworking() {
+    // Connect to the Colyseus server
+    const connected = await this.networkManager.connect()
 
-      console.log('TErritory is clicked, got it by events normally')
+    if (connected) {
+      console.log('Connected to game server!')
 
-      if (data.phase === 'placement') {
-        console.log('TErritory is clicked, got it by events placement phase')
-        this.territoryManager.addTerritoryArmies(data.territoryId, 1)
-        // Update current player's reinforcements
-        // ... rest of your existing code
+      // Set up callbacks for server state changes
+      this.networkManager.setOnStateChangeCallback((state) => {
+        this.handleStateUpdate(state)
+      })
+
+      this.networkManager.setOnGameOverCallback((data) => {
+        this.gameOver(data.winnerId)
+      })
+    } else {
+      console.error('Failed to connect to game server!')
+      // Show an error message to the user
+      this.showConnectionError()
+    }
+  }
+
+  private handleStateUpdate(state: any) {
+    // Store my player ID based on session ID
+    if (this.myPlayerId === -1) {
+      const sessionId = this.networkManager.getSessionId()
+      const myPlayerData = state.players[sessionId]
+      if (myPlayerData) {
+        this.myPlayerId = myPlayerData.id
+        console.log('My player ID:', this.myPlayerId)
       }
-    })
+    }
+
+    // Update territories
+    for (const [id, territory] of Object.entries(state.territories)) {
+      const territoryId = parseInt(id)
+      const territoryObject = this.territoryManager.getTerritory(territoryId)
+      if (territoryObject) {
+        // Update territory owner
+        if (territory.owner !== -1) {
+          const player = this.findPlayerById(territory.owner)
+          if (player) {
+            this.territoryManager.setTerritoryOwner(territoryId, player)
+          }
+        }
+
+        // Update territory armies
+        this.territoryManager.setTerritoryArmies(territoryId, territory.armies)
+
+        // Update territory selection
+        const isSelected = territoryId === state.selectedTerritoryId
+        this.territoryManager.setTerritorySelected(territoryId, isSelected)
+      }
+    }
+
+    // Update game phase
+    window.gameState.gamePhase = state.gamePhase
+    window.gameState.currentPlayerIndex = state.currentPlayerIndex
+    window.gameState.selectedTerritoryId = state.selectedTerritoryId
+    window.gameState.targetTerritoryId = state.targetTerritoryId
+    window.gameState.initialPlacementDone = state.initialPlacementDone
+
+    // Update player info
+    for (const [sessionId, playerData] of Object.entries(state.players)) {
+      // Find the corresponding local player
+      const localPlayerIndex = playerData.id
+      if (localPlayerIndex < window.gameState.players.length) {
+        const player = window.gameState.players[localPlayerIndex]
+        player.armies = 0 // Reset and recalculate
+        player.reinforcements = playerData.reinforcements
+        player.eliminated = playerData.eliminated
+
+        // Update player territories
+        player.territories = []
+        for (const territoryId of playerData.territories) {
+          player.territories.push(territoryId)
+        }
+      }
+    }
+
+    this.isLocalPlayerTurn = window.gameState.currentPlayerIndex === this.myPlayerId
+
+    // Enable/disable end turn button based on turn
+    if (this.isLocalPlayerTurn && window.gameState.gamePhase !== 'initialPlacement') {
+      this.endTurnButton.setInteractive()
+      this.endTurnButton.setFillStyle(0x444444)
+    } else {
+      this.endTurnButton.disableInteractive()
+      this.endTurnButton.setFillStyle(0x333333)
+    }
+
+    // Update game UI
+    this.updateGameInfo()
+  }
+
+  private findPlayerById(id: number): any {
+    return window.gameState.players.find((p) => p.id === id) || null
+  }
+
+  private showConnectionError() {
+    // Display an error message in the game
+    const errorText = this.add
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        'Could not connect to game server.\nPlease refresh the page to try again.',
+        {
+          fontSize: '24px',
+          color: '#FF0000',
+          align: 'center',
+        }
+      )
+      .setOrigin(0.5)
+      .setDepth(1000)
+
+    // Add a background for better visibility
+    const bg = this.add
+      .rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2, 500, 150, 0x000000, 0.7)
+      .setOrigin(0.5)
+      .setDepth(999)
   }
 
   setupGameInfo() {
@@ -283,116 +397,10 @@ export class GameScene extends Phaser.Scene {
     this.endTurnButton.setFillStyle(0x333333)
   }
 
-  startPlacementPhase() {
-    window.gameState.gamePhase = 'initialPlacement'
-    window.gameState.initialPlacementDone = false
-    this.phaseText.setText('Phase: Initial Placement')
-
-    // Calculate initial armies based on players
-    const numPlayers = window.gameState.players.length
-    const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20)
-
-    window.gameState.players.forEach((player) => {
-      player.armies = initialArmies
-      player.reinforcements = initialArmies
-    })
-
-    // Randomly assign territories to players
-    this.assignTerritories()
-
-    // Update display
-    this.updateGameInfo()
-
-    // Disable end turn button during initial placement
-    this.endTurnButton.disableInteractive()
-    this.endTurnButton.setFillStyle(0x333333)
-  }
-
-  assignTerritories() {
-    // Create a copy of territory IDs
-    const territoryIds = this.territoryManager.getAllTerritories().map((t) => t.id)
-
-    // Shuffle territory IDs
-    for (let i = territoryIds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[territoryIds[i], territoryIds[j]] = [territoryIds[j], territoryIds[i]]
-    }
-
-    // Assign territories evenly to players with animation
-    const numPlayers = window.gameState.players.length
-
-    // Display an "assigning territories" message
-    const assignText = this.add
-      .text(this.cameras.main.width / 2, this.cameras.main.height / 2, 'ASSIGNING TERRITORIES', {
-        fontSize: '40px',
-        fontStyle: 'bold',
-        color: '#FFFFFF',
-        stroke: '#000000',
-        strokeThickness: 6,
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Animate text
-    this.tweens.add({
-      targets: assignText,
-      alpha: { from: 0, to: 1 },
-      scale: { from: 0.5, to: 1 },
-      duration: 500,
-      ease: 'Back.easeOut',
-      onComplete: () => {
-        // Fade out after a short delay
-        this.time.delayedCall(1000, () => {
-          this.tweens.add({
-            targets: assignText,
-            alpha: 0,
-            duration: 500,
-            ease: 'Power2',
-            onComplete: () => {
-              assignText.destroy()
-            },
-          })
-        })
-      },
-    })
-
-    for (let i = 0; i < territoryIds.length; i++) {
-      const territoryId = territoryIds[i]
-      const playerId = i % numPlayers
-      const player = window.gameState.players[playerId]
-
-      // Use delayed call to create staggered assignment animation
-      this.time.delayedCall(1500 + i * 50, () => {
-        // Assign territory to player
-        this.territoryManager.setTerritoryOwner(territoryId, player)
-        this.territoryManager.setTerritoryArmies(territoryId, 1)
-
-        // Flash effect for territory assignment
-        const territory = this.territoryManager.getTerritory(territoryId)
-        if (territory) {
-          this.tweens.add({
-            targets: territory.image,
-            scaleX: territory.originalScale * 1.2,
-            scaleY: territory.originalScale * 1.2,
-            duration: 150,
-            yoyo: true,
-            ease: 'Sine.easeInOut',
-          })
-        }
-
-        // Add territory to player's list
-        player.territories.push(territoryId)
-
-        // Reduce player's reinforcements
-        player.reinforcements--
-      })
-    }
-  }
-
   updateGameInfo() {
     const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
-    if (currentPlayer.eliminated) {
+    if (currentPlayer?.eliminated) {
       // Skip to next player if current one is eliminated
       this.endTurn()
       return
@@ -400,7 +408,9 @@ export class GameScene extends Phaser.Scene {
 
     // Update player text with color
     this.playerText.setText(`Player: ${window.gameState.currentPlayerIndex + 1}`)
-    this.playerText.setColor(this.hexNumToHexString(currentPlayer.color))
+    if (currentPlayer) {
+      this.playerText.setColor(this.hexNumToHexString(currentPlayer.color))
+    }
 
     // Update phase text
     if (window.gameState.gamePhase === 'initialPlacement') {
@@ -409,35 +419,53 @@ export class GameScene extends Phaser.Scene {
       this.phaseText.setText(`Phase: ${this.capitalizeFirstLetter(window.gameState.gamePhase)}`)
     }
 
-    // Update end turn button text based on phase
-    if (window.gameState.gamePhase === 'placement') {
-      this.endTurnText.setText('Start Attack Phase')
-    } else if (window.gameState.gamePhase === 'attack') {
-      this.endTurnText.setText('Start Fortify Phase')
-    } else if (window.gameState.gamePhase === 'fortify') {
-      this.endTurnText.setText('End Turn')
-    } else {
-      // Initial placement phase
-      this.endTurnText.setText('Please Place Armies')
-    }
+    // Update action text based on game phase and whether it's the local player's turn
+    if (this.isLocalPlayerTurn) {
+      // Update end turn button text based on phase
+      if (window.gameState.gamePhase === 'placement') {
+        this.endTurnText.setText('Start Attack Phase')
+      } else if (window.gameState.gamePhase === 'attack') {
+        this.endTurnText.setText('Start Fortify Phase')
+      } else if (window.gameState.gamePhase === 'fortify') {
+        this.endTurnText.setText('End Turn')
+      } else {
+        // Initial placement phase
+        this.endTurnText.setText('Please Place Armies')
+      }
 
-    // Update action text based on game phase
-    if (window.gameState.gamePhase === 'initialPlacement') {
-      this.actionText.setText(
-        `Initial Placement\nPlayer ${window.gameState.currentPlayerIndex + 1}'s turn\nRemaining: ${
-          currentPlayer.reinforcements
-        }`
-      )
-    } else if (window.gameState.gamePhase === 'placement') {
-      this.actionText.setText(
-        `Player ${
-          window.gameState.currentPlayerIndex + 1
-        }'s turn\nPlace your reinforcements\nRemaining: ${currentPlayer.reinforcements}`
-      )
-    } else if (window.gameState.gamePhase === 'attack') {
-      this.actionText.setText('Select your territory to attack from')
-    } else if (window.gameState.gamePhase === 'fortify') {
-      this.actionText.setText('Select territory to move armies from or end turn')
+      // Action text for local player's turn
+      if (window.gameState.gamePhase === 'initialPlacement') {
+        this.actionText.setText(
+          `Your Turn: Initial Placement\nRemaining: ${currentPlayer?.reinforcements ?? 0}`
+        )
+      } else if (window.gameState.gamePhase === 'placement') {
+        this.actionText.setText(
+          `Your Turn: Place your reinforcements\nRemaining: ${currentPlayer?.reinforcements ?? 0}`
+        )
+      } else if (window.gameState.gamePhase === 'attack') {
+        this.actionText.setText('Your Turn: Select your territory to attack from')
+      } else if (window.gameState.gamePhase === 'fortify') {
+        this.actionText.setText('Your Turn: Select territory to move armies from or end turn')
+      }
+    } else {
+      // It's another player's turn
+      if (window.gameState.gamePhase === 'initialPlacement') {
+        this.actionText.setText(
+          `Player ${window.gameState.currentPlayerIndex + 1}'s turn\nInitial Placement`
+        )
+      } else if (window.gameState.gamePhase === 'placement') {
+        this.actionText.setText(
+          `Player ${window.gameState.currentPlayerIndex + 1}'s turn\nPlacement Phase`
+        )
+      } else if (window.gameState.gamePhase === 'attack') {
+        this.actionText.setText(
+          `Player ${window.gameState.currentPlayerIndex + 1}'s turn\nAttack Phase`
+        )
+      } else if (window.gameState.gamePhase === 'fortify') {
+        this.actionText.setText(
+          `Player ${window.gameState.currentPlayerIndex + 1}'s turn\nFortify Phase`
+        )
+      }
     }
   }
 
@@ -451,89 +479,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   endTurn() {
-    // Handle different phase transitions
-    if (window.gameState.gamePhase === 'placement') {
-      // From placement -> attack (same player)
-      window.gameState.gamePhase = 'attack'
+    // Send end phase message to server
+    this.networkManager.endPhase()
+  }
 
-      // Phase transition animation
-      this.createPhaseTransitionAnimation('attack')
-
-      this.updateGameInfo()
+  handleTerritoryClick(territory: Territory) {
+    // Only allow interactions during the local player's turn
+    if (!this.isLocalPlayerTurn && window.gameState.gamePhase !== 'waiting') {
+      this.actionText.setText(`It's not your turn!`)
       return
-    } else if (window.gameState.gamePhase === 'attack') {
-      // From attack -> fortify (same player)
-      window.gameState.gamePhase = 'fortify'
-      this.hasFortified = false
-
-      // Phase transition animation
-      this.createPhaseTransitionAnimation('fortify')
-
-      // Reset selections
-      if (window.gameState.selectedTerritoryId !== null) {
-        this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-        window.gameState.selectedTerritoryId = null
-      }
-      window.gameState.targetTerritoryId = null
-
-      this.updateGameInfo()
-      return
-    } else if (window.gameState.gamePhase === 'fortify') {
-      // Reset selected territories
-      if (window.gameState.selectedTerritoryId !== null) {
-        this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-        window.gameState.selectedTerritoryId = null
-      }
-      window.gameState.targetTerritoryId = null
-
-      // Find the next active player (not eliminated)
-      let nextPlayerFound = false
-      let nextPlayerIndex = window.gameState.currentPlayerIndex
-      const playerCount = window.gameState.players.length
-
-      for (let i = 1; i <= playerCount; i++) {
-        // Calculate next player index with wrapping
-        nextPlayerIndex = (window.gameState.currentPlayerIndex + i) % playerCount
-
-        // Check if this player is still in the game
-        if (!window.gameState.players[nextPlayerIndex].eliminated) {
-          nextPlayerFound = true
-          break
-        }
-      }
-
-      // If no active players found besides current one, game is over
-      if (!nextPlayerFound) {
-        // Current player wins!
-        this.gameOver(window.gameState.currentPlayerIndex)
-        return
-      }
-
-      // Move to the next active player
-      window.gameState.currentPlayerIndex = nextPlayerIndex
-      const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
-
-      // Calculate reinforcements including continent bonuses for the new player
-      currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer)
-
-      // Create player turn change animation
-      this.createPlayerTurnAnimation(window.gameState.currentPlayerIndex)
-
-      // Move to placement phase for next player
-      window.gameState.gamePhase = 'placement'
-
-      // Add slight delay, then show placement phase animation
-      this.time.delayedCall(1500, () => {
-        this.createPhaseTransitionAnimation('placement')
-      })
-
-      // Update display
-      this.updateGameInfo()
-
-      // Disable end turn button until player places all armies
-      this.endTurnButton.disableInteractive()
-      this.endTurnButton.setFillStyle(0x333333)
     }
+
+    // Send territory selection to the server
+    this.networkManager.selectTerritory(territory.id)
   }
 
   createPhaseTransitionAnimation(newPhase: string) {
@@ -582,241 +540,6 @@ export class GameScene extends Phaser.Scene {
         })
       },
     })
-  }
-
-  handleTerritoryClick(territory: Territory) {
-    const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
-
-    window.gameEvents.emit('territoryClicked', {
-      territoryId: territory.id,
-      phase: window.gameState.gamePhase,
-    })
-
-    // INITIAL PLACEMENT PHASE
-    if (window.gameState.gamePhase === 'initialPlacement') {
-      if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
-        // Place an army
-        this.territoryManager.addTerritoryArmies(territory.id, 1)
-        currentPlayer.reinforcements--
-        this.updateGameInfo()
-
-        // If current player has placed all armies, move to next player
-        if (currentPlayer.reinforcements === 0) {
-          // Move to the next player
-          window.gameState.currentPlayerIndex =
-            (window.gameState.currentPlayerIndex + 1) % window.gameState.players.length
-
-          // Check if all players have placed their initial armies
-          let allPlaced = true
-          for (const player of window.gameState.players) {
-            if (player.reinforcements > 0) {
-              allPlaced = false
-              break
-            }
-          }
-
-          // If all players have placed their armies, start regular game flow
-          if (allPlaced) {
-            window.gameState.initialPlacementDone = true
-            window.gameState.gamePhase = 'placement'
-
-            // Reset to first player and give reinforcements
-            window.gameState.currentPlayerIndex = 0
-            const firstPlayer = window.gameState.players[0]
-            firstPlayer.reinforcements = this.calculateReinforcements(firstPlayer)
-
-            // Enable end phase button
-            this.endTurnButton.setInteractive()
-            this.endTurnButton.setFillStyle(0x444444)
-          }
-
-          this.updateGameInfo()
-        }
-      }
-    }
-    // REGULAR PLACEMENT PHASE
-    else if (window.gameState.gamePhase === 'placement') {
-      if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
-        // Place an army
-        this.territoryManager.addTerritoryArmies(territory.id, 1)
-        currentPlayer.reinforcements--
-        this.updateGameInfo()
-
-        // If all reinforcements placed, enable the end phase button
-        if (currentPlayer.reinforcements === 0) {
-          // Enable end turn button - player can now move to attack phase
-          this.endTurnButton.setInteractive()
-          this.endTurnButton.setFillStyle(0x444444)
-          this.updateGameInfo()
-        }
-      }
-    }
-    // ATTACK PHASE
-    else if (window.gameState.gamePhase === 'attack') {
-      if (window.gameState.selectedTerritoryId === null) {
-        // Selecting the attacking territory
-        if (territory.owner === currentPlayer.id && territory.armies > 1) {
-          window.gameState.selectedTerritoryId = territory.id
-          this.territoryManager.setTerritorySelected(territory.id, true)
-          this.actionText.setText('Select an adjacent territory to attack')
-        } else if (territory.owner === currentPlayer.id && territory.armies <= 1) {
-          this.actionText.setText('Need at least 2 armies to attack')
-        }
-      } else {
-        // Selecting the defending territory and attack
-        if (
-          territory.owner !== currentPlayer.id &&
-          this.territoryManager.areAdjacent(window.gameState.selectedTerritoryId, territory.id)
-        ) {
-          window.gameState.targetTerritoryId = territory.id
-          this.resolveAttack()
-        } else if (territory.id === window.gameState.selectedTerritoryId) {
-          this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-          window.gameState.selectedTerritoryId = null
-          this.actionText.setText('Select your territory to attack from')
-        } else {
-          // Invalid target, reset selection
-          if (window.gameState.selectedTerritoryId !== null) {
-            this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-            window.gameState.selectedTerritoryId = null
-          }
-          this.actionText.setText('Invalid target. Select your territory to attack from')
-        }
-      }
-    }
-    // FORTIFY PHASE
-    else if (window.gameState.gamePhase === 'fortify') {
-      if (this.hasFortified) {
-        this.actionText.setText("You've already fortified this turn. Please end your turn.")
-        return
-      }
-
-      if (window.gameState.selectedTerritoryId === null) {
-        // Selecting the source territory
-        if (territory.owner === currentPlayer.id && territory.armies > 1) {
-          window.gameState.selectedTerritoryId = territory.id
-          this.territoryManager.setTerritorySelected(territory.id, true)
-          this.actionText.setText('Select any friendly territory to fortify')
-        }
-      } else {
-        // Selection the destination territory
-        if (
-          territory.owner === currentPlayer.id &&
-          territory.id !== window.gameState.selectedTerritoryId
-        ) {
-          window.gameState.targetTerritoryId = territory.id
-          this.fortifyTerritory()
-        } else if (territory.id === window.gameState.selectedTerritoryId) {
-          // Deselect
-          this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-          window.gameState.selectedTerritoryId = null
-          this.actionText.setText('Select territory to move armies from or end turn')
-        } else {
-          // Invalid target, reset selection
-          if (window.gameState.selectedTerritoryId !== null) {
-            this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-            window.gameState.selectedTerritoryId = null
-          }
-          this.actionText.setText('Invalid target. Select territory to move armies or end turn')
-        }
-      }
-    }
-  }
-
-  resolveAttack() {
-    if (
-      window.gameState.selectedTerritoryId === null ||
-      window.gameState.targetTerritoryId === null
-    ) {
-      return
-    }
-
-    const attackerTerritory = this.territoryManager.getTerritory(
-      window.gameState.selectedTerritoryId
-    )
-    const defenderTerritory = this.territoryManager.getTerritory(window.gameState.targetTerritoryId)
-
-    if (!attackerTerritory || !defenderTerritory) return
-
-    // Maximum number of dice
-    const maxAttackerDice = Math.min(3, attackerTerritory.armies - 1)
-    const maxDefenderDice = Math.min(2, defenderTerritory.armies)
-
-    // Roll dice
-    const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a)
-    const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a)
-
-    // Display dice results visually
-    this.showDiceRoll(attackerDice, defenderDice)
-
-    // Compare dice pairs
-    let attackerLosses = 0
-    let defenderLosses = 0
-
-    for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
-      if (attackerDice[i] > defenderDice[i]) {
-        defenderLosses++
-      } else {
-        attackerLosses++
-      }
-    }
-
-    // Apply losses
-    this.territoryManager.removeTerritoryArmies(
-      window.gameState.selectedTerritoryId,
-      attackerLosses
-    )
-    this.territoryManager.removeTerritoryArmies(window.gameState.targetTerritoryId, defenderLosses)
-
-    // Update text with results
-    this.actionText.setText(
-      `Battle results\n` +
-        `Attacker lost ${attackerLosses} armies\n` +
-        `Defender lost ${defenderLosses} armies`
-    )
-
-    // Check if defender was defeated
-    if (defenderTerritory.armies - defenderLosses <= 0) {
-      // Get player references
-      const defenderPlayer = window.gameState.players[defenderTerritory.owner!]
-
-      // Calculate armies to move (all but 1 from attacker)
-      const armiesToMove = attackerTerritory.armies - attackerLosses - 1
-
-      // Capture the territory
-      this.territoryManager.captureTerritory(
-        window.gameState.selectedTerritoryId,
-        window.gameState.targetTerritoryId,
-        armiesToMove
-      )
-
-      // Set action text with capture message
-      this.actionText.setText(`You captured ${defenderTerritory.name}!`)
-
-      // Check if the defender player has been eliminated
-      if (defenderPlayer.territories.length === 0) {
-        defenderPlayer.eliminated = true
-        this.showPlayerEliminationMessage(defenderPlayer.id)
-      }
-    }
-
-    // Reset selections
-    if (window.gameState.selectedTerritoryId !== null) {
-      this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-    }
-    window.gameState.selectedTerritoryId = null
-    window.gameState.targetTerritoryId = null
-
-    // Check for game over
-    this.checkGameOver()
-  }
-
-  rollDice(count: number): number[] {
-    const results = []
-    for (let i = 0; i < count; i++) {
-      results.push(Math.floor(Math.random() * 6) + 1)
-    }
-    return results
   }
 
   createDiceDisplay() {
@@ -1087,372 +810,12 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
-  fortifyTerritory() {
-    if (
-      window.gameState.selectedTerritoryId === null ||
-      window.gameState.targetTerritoryId === null
-    ) {
-      return
+  rollDice(count: number): number[] {
+    const results = []
+    for (let i = 0; i < count; i++) {
+      results.push(Math.floor(Math.random() * 6) + 1)
     }
-
-    const source = this.territoryManager.getTerritory(window.gameState.selectedTerritoryId)
-    const destination = this.territoryManager.getTerritory(window.gameState.targetTerritoryId)
-
-    if (!source || !destination) return
-
-    if (source.armies <= 1) {
-      this.actionText.setText('Not enough armies to fortify')
-
-      // Reset selections
-      this.territoryManager.setTerritorySelected(window.gameState.selectedTerritoryId, false)
-      window.gameState.selectedTerritoryId = null
-      window.gameState.targetTerritoryId = null
-      return
-    }
-
-    // Show the army selection UI
-    this.createArmySelectionUI(source, destination)
-  }
-
-  createArmySelectionUI(source: Territory, destination: Territory) {
-    // Background panel with semi-transparent background
-    const panel = this.add
-      .rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2, 400, 300, 0x222222, 0.9)
-      .setOrigin(0.5)
-      .setStrokeStyle(2, 0xffffff)
-      .setDepth(1000)
-
-    // Title
-    const title = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 - 100,
-        'Select Armies to Move',
-        {
-          fontSize: '24px',
-          color: '#FFF',
-          fontStyle: 'bold',
-        }
-      )
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Territory info
-    const infoText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 - 60,
-        `From ${source.name} (${source.armies} armies) to ${destination.name} (${destination.armies} armies)`,
-        {
-          fontSize: '16px',
-          color: '#FFF',
-        }
-      )
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Calculate max armies that can be moved (leaving at least 1 behind)
-    const maxArmies = source.armies - 1
-    let currentArmies = Math.floor(maxArmies / 2) // Default to half, rounding down
-
-    // Current selection text
-    const selectionText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2,
-        `Armies to move: ${currentArmies}`,
-        {
-          fontSize: '20px',
-          color: '#FFF',
-        }
-      )
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Create minus button
-    const minusButton = this.add
-      .rectangle(this.cameras.main.width / 2 - 150, this.cameras.main.height / 2, 40, 40, 0x444444)
-      .setOrigin(0.5)
-      .setInteractive()
-      .setDepth(1000)
-
-    const minusText = this.add
-      .text(this.cameras.main.width / 2 - 150, this.cameras.main.height / 2, '-', {
-        fontSize: '24px',
-        color: '#FFF',
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Create plus button
-    const plusButton = this.add
-      .rectangle(this.cameras.main.width / 2 + 150, this.cameras.main.height / 2, 40, 40, 0x444444)
-      .setOrigin(0.5)
-      .setInteractive()
-      .setDepth(1000)
-
-    const plusText = this.add
-      .text(this.cameras.main.width / 2 + 150, this.cameras.main.height / 2, '+', {
-        fontSize: '24px',
-        color: '#FFF',
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Create slider background
-    const sliderBg = this.add
-      .rectangle(this.cameras.main.width / 2, this.cameras.main.height / 2 + 50, 200, 20, 0x555555)
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Create slider handle
-    const sliderHandle = this.add
-      .rectangle(
-        this.cameras.main.width / 2 - 100 + 200 * (currentArmies / maxArmies),
-        this.cameras.main.height / 2 + 50,
-        20,
-        30,
-        0xffffff
-      )
-      .setOrigin(0.5)
-      .setInteractive()
-      .setDepth(1000)
-    sliderHandle.setData('value', currentArmies)
-
-    // Make slider handle draggable
-    this.input.setDraggable(sliderHandle)
-
-    // Max and Min labels for slider
-    const minLabel = this.add
-      .text(this.cameras.main.width / 2 - 110, this.cameras.main.height / 2 + 50, '1', {
-        fontSize: '14px',
-        color: '#FFF',
-      })
-      .setOrigin(1, 0.5)
-      .setDepth(1000)
-
-    const maxLabel = this.add
-      .text(
-        this.cameras.main.width / 2 + 110,
-        this.cameras.main.height / 2 + 50,
-        maxArmies.toString(),
-        { fontSize: '14px', color: '#FFF' }
-      )
-      .setOrigin(0, 0.5)
-      .setDepth(1000)
-
-    // Create confirm button
-    const confirmButton = this.add
-      .rectangle(
-        this.cameras.main.width / 2 - 80,
-        this.cameras.main.height / 2 + 100,
-        120,
-        40,
-        0x33aa33
-      )
-      .setOrigin(0.5)
-      .setInteractive()
-      .setDepth(1000)
-
-    const confirmText = this.add
-      .text(this.cameras.main.width / 2 - 80, this.cameras.main.height / 2 + 100, 'Confirm', {
-        fontSize: '18px',
-        color: '#FFF',
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Create cancel button
-    const cancelButton = this.add
-      .rectangle(
-        this.cameras.main.width / 2 + 80,
-        this.cameras.main.height / 2 + 100,
-        120,
-        40,
-        0xaa3333
-      )
-      .setOrigin(0.5)
-      .setInteractive()
-      .setDepth(1000)
-
-    const cancelText = this.add
-      .text(this.cameras.main.width / 2 + 80, this.cameras.main.height / 2 + 100, 'Cancel', {
-        fontSize: '18px',
-        color: '#FFF',
-      })
-      .setOrigin(0.5)
-      .setDepth(1000)
-
-    // Group all UI elements for easy cleanup
-    const uiElements = [
-      panel,
-      title,
-      infoText,
-      selectionText,
-      minusButton,
-      minusText,
-      plusButton,
-      plusText,
-      sliderBg,
-      sliderHandle,
-      minLabel,
-      maxLabel,
-      confirmButton,
-      confirmText,
-      cancelButton,
-      cancelText,
-    ]
-
-    // Function to update the display
-    const updateArmySelection = (value: number) => {
-      // Constrain to valid range (1 to maxArmies)
-      const armiesValue = Math.min(Math.max(1, Math.round(value)), maxArmies)
-      currentArmies = armiesValue
-
-      // Update text
-      selectionText.setText(`Armies to move: ${armiesValue}`)
-
-      // Update slider position
-      const newX = this.cameras.main.width / 2 - 100 + 200 * (armiesValue / maxArmies)
-      sliderHandle.x = newX
-    }
-
-    // Minus button click
-    minusButton.on('pointerdown', () => {
-      if (currentArmies > 1) {
-        updateArmySelection(currentArmies - 1)
-      }
-    })
-
-    // Add hover effects for minus button
-    minusButton.on('pointerover', () => {
-      minusButton.setFillStyle(0x666666)
-    })
-    minusButton.on('pointerout', () => {
-      minusButton.setFillStyle(0x444444)
-    })
-
-    // Plus button click
-    plusButton.on('pointerdown', () => {
-      if (currentArmies < maxArmies) {
-        updateArmySelection(currentArmies + 1)
-      }
-    })
-
-    // Add hover effects for plus button
-    plusButton.on('pointerover', () => {
-      plusButton.setFillStyle(0x666666)
-    })
-    plusButton.on('pointerout', () => {
-      plusButton.setFillStyle(0x444444)
-    })
-
-    // Slider drag
-    this.input.on(
-      'drag',
-      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Rectangle, dragX: number) => {
-        if (gameObject === sliderHandle) {
-          // Constrain x position to slider bounds
-          const minX = this.cameras.main.width / 2 - 100
-          const maxX = this.cameras.main.width / 2 + 100
-          const newX = Math.min(Math.max(dragX, minX), maxX)
-
-          // Update position
-          gameObject.x = newX
-
-          // Calculate value based on position
-          const percentage = (newX - minX) / (maxX - minX)
-          const value = Math.max(1, Math.min(Math.round(percentage * maxArmies), maxArmies))
-
-          // Update display
-          updateArmySelection(value)
-        }
-      }
-    )
-
-    // Cancel drag when pointer is released
-    this.input.on('dragend', () => {
-      // This ensures we don't keep dragging after release
-    })
-
-    // Confirm button hover effects
-    confirmButton.on('pointerover', () => {
-      confirmButton.setFillStyle(0x44cc44)
-    })
-    confirmButton.on('pointerout', () => {
-      confirmButton.setFillStyle(0x33aa33)
-    })
-
-    // Cancel button hover effects
-    cancelButton.on('pointerover', () => {
-      cancelButton.setFillStyle(0xcc4444)
-    })
-    cancelButton.on('pointerout', () => {
-      cancelButton.setFillStyle(0xaa3333)
-    })
-
-    // Confirm button click - move the armies
-    confirmButton.on('pointerdown', () => {
-      // Create button press animation
-      this.tweens.add({
-        targets: confirmButton,
-        scaleX: 0.95,
-        scaleY: 0.95,
-        duration: 50,
-        yoyo: true,
-        ease: 'Sine.easeInOut',
-        onComplete: () => {
-          // Move the armies
-          this.territoryManager.removeTerritoryArmies(source.id, currentArmies)
-          this.territoryManager.addTerritoryArmies(destination.id, currentArmies)
-
-          this.actionText.setText(
-            `Moved ${currentArmies} armies from ${source.name} to ${destination.name}. You cannot fortify again this turn.`
-          )
-
-          this.hasFortified = true
-
-          // Clean up UI and event listeners
-          this.input.off('drag')
-          this.input.off('dragend')
-          uiElements.forEach((element) => element.destroy())
-
-          // Reset selections
-          this.territoryManager.setTerritorySelected(source.id, false)
-          window.gameState.selectedTerritoryId = null
-          window.gameState.targetTerritoryId = null
-        },
-      })
-    })
-
-    // Cancel button click
-    cancelButton.on('pointerdown', () => {
-      // Create button press animation
-      this.tweens.add({
-        targets: cancelButton,
-        scaleX: 0.95,
-        scaleY: 0.95,
-        duration: 50,
-        yoyo: true,
-        ease: 'Sine.easeInOut',
-        onComplete: () => {
-          // Clean up UI and event listeners
-          this.input.off('drag')
-          this.input.off('dragend')
-          uiElements.forEach((element) => element.destroy())
-
-          // Reset selections
-          this.territoryManager.setTerritorySelected(source.id, false)
-          window.gameState.selectedTerritoryId = null
-          window.gameState.targetTerritoryId = null
-
-          this.actionText.setText('Fortify canceled')
-        },
-      })
-    })
-
-    // Initial setup - start with current value
-    updateArmySelection(currentArmies)
+    return results
   }
 
   calculateReinforcements(player: Player): number {
@@ -1475,107 +838,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     return reinforcements
-  }
-
-  createPlayerTurnAnimation(playerIndex: number) {
-    const player = window.gameState.players[playerIndex]
-
-    // Convert numeric color to hex string
-    const colorString = this.hexNumToHexString(player.color)
-
-    // Create the player turn announcement
-    const playerText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 - 40,
-        'PLAYER ' + (playerIndex + 1) + "'S TURN",
-        {
-          fontSize: '52px',
-          fontStyle: 'bold',
-          color: colorString,
-          stroke: '#000000',
-          strokeThickness: 6,
-          align: 'center',
-        }
-      )
-      .setOrigin(0.5)
-
-    // Create reinforcements text
-    const reinforcementsText = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 + 30,
-        `Reinforcements: ${player.reinforcements}`,
-        {
-          fontSize: '32px',
-          color: '#FFFFFF',
-          stroke: '#000000',
-          strokeThickness: 4,
-          align: 'center',
-        }
-      )
-      .setOrigin(0.5)
-
-    // Set initial properties for animation
-    playerText.setAlpha(0)
-    playerText.setScale(0.5)
-    reinforcementsText.setAlpha(0)
-    reinforcementsText.setScale(0.5)
-
-    // Set high depth to appear above everything
-    playerText.setDepth(1000)
-    reinforcementsText.setDepth(1000)
-
-    // First tween - fade in and scale up
-    this.tweens.add({
-      targets: [playerText, reinforcementsText],
-      alpha: 1,
-      scale: 1,
-      duration: 800,
-      ease: 'Sine.easeOut',
-      onComplete: () => {
-        // Hold for a moment, then fade out
-        this.time.delayedCall(1200, () => {
-          // Fade out and scale up more
-          this.tweens.add({
-            targets: [playerText, reinforcementsText],
-            alpha: 0,
-            scale: 1.3,
-            duration: 500,
-            ease: 'Sine.easeIn',
-            onComplete: () => {
-              playerText.destroy()
-              reinforcementsText.destroy()
-            },
-          })
-        })
-      },
-    })
-  }
-
-  checkGameOver() {
-    let activePlayers = 0
-    let lastActivePlayerIndex = -1
-
-    window.gameState.players.forEach((player, index) => {
-      if (!player.eliminated) {
-        activePlayers++
-        lastActivePlayerIndex = index
-      }
-    })
-
-    // If only one player remains, they win
-    if (activePlayers === 1) {
-      this.gameOver(lastActivePlayerIndex)
-      return
-    }
-
-    // Also check if any player has conquered all territories
-    window.gameState.players.forEach((player, index) => {
-      if (player.territories.length === territoriesData.length) {
-        this.gameOver(index)
-      }
-    })
   }
 
   gameOver(winnerIndex: number) {

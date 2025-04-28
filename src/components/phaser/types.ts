@@ -32,7 +32,7 @@ export interface ContinentData {
 export interface GameState {
   players: Player[]
   currentPlayerIndex: number
-  gamePhase: 'initialPlacement' | 'placement' | 'attack' | 'fortify'
+  gamePhase: 'waiting' | 'initialPlacement' | 'placement' | 'attack' | 'fortify'
   selectedTerritoryId: number | null
   targetTerritoryId: number | null
   initialPlacementDone: boolean

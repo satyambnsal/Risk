@@ -32,7 +32,7 @@ export class FogOfNoirState extends Schema {
   @type({ map: Territory }) territories = new MapSchema<Territory>()
 
   // For tracking adjacency between territories
-  @type({ map: ['uint8'] }) adjacencyMap = new MapSchema<ArraySchema<number>>()
+  @type('string') adjacencyMapData: string = '{}'
 
   // For tracking continents and their bonus values
   @type('string') continentData: string = '{}' // JSON string of continent data

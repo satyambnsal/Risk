@@ -115,7 +115,7 @@ export class FogOfNoirRoom extends Room<FogOfNoirState> {
       for (const id of adjacentIds) {
         adjacentArray.push(id)
       }
-      this.state.adjacencyMap.set(territoryId, adjacentArray)
+      this.state.adjacencyMapData = JSON.stringify(this.adjacencyMapData)
     }
 
     // Store continent data
@@ -172,23 +172,376 @@ export class FogOfNoirRoom extends Room<FogOfNoirState> {
   }
 
   handlePlacementAction(client: Client, territoryId: number) {
-    // Implementation for placement actions
-    // This will be filled out in later steps
+    const playerIndex = this.getPlayerIndex(client)
+    if (playerIndex !== this.state.currentPlayerIndex) return
+
+    const player = this.state.players.get(client.sessionId)
+    const territory = this.state.territories.get(territoryId.toString())
+
+    if (!player || !territory) return
+
+    // INITIAL PLACEMENT PHASE
+    if (this.state.gamePhase === 'initialPlacement') {
+      if (territory.owner === player.id && player.reinforcements > 0) {
+        // Place an army
+        territory.armies += 1
+        player.reinforcements--
+
+        // If current player has placed all armies, move to next player
+        if (player.reinforcements === 0) {
+          // Move to the next player
+          this.advanceToNextPlayer()
+
+          // Check if all players have placed their initial armies
+          let allPlaced = true
+          this.state.players.forEach((player) => {
+            if (player.reinforcements > 0) {
+              allPlaced = false
+            }
+          })
+
+          // If all players have placed their armies, start regular game flow
+          if (allPlaced) {
+            this.state.initialPlacementDone = true
+            this.state.gamePhase = 'placement'
+
+            // Reset to first player and give reinforcements
+            this.state.currentPlayerIndex = 0
+            const firstPlayerSessionId = Array.from(this.state.players.keys())[0]
+            const firstPlayer = this.state.players.get(firstPlayerSessionId)
+            if (firstPlayer) {
+              firstPlayer.reinforcements = this.calculateReinforcements(firstPlayer)
+            }
+          }
+        }
+      }
+    }
+    // REGULAR PLACEMENT PHASE
+    else if (this.state.gamePhase === 'placement') {
+      if (territory.owner === player.id && player.reinforcements > 0) {
+        // Place an army
+        territory.armies += 1
+        player.reinforcements--
+      }
+    }
   }
 
   handleAttackSelection(client: Client, territoryId: number) {
-    // Implementation for attack selection
-    // This will be filled out in later steps
+    const playerIndex = this.getPlayerIndex(client)
+    if (playerIndex !== this.state.currentPlayerIndex) return
+
+    const player = this.state.players.get(client.sessionId)
+    if (!player) return
+
+    if (this.state.selectedTerritoryId === -1) {
+      // Selecting the attacking territory
+      const territory = this.state.territories.get(territoryId.toString())
+      if (!territory) return
+
+      if (territory.owner === player.id && territory.armies > 1) {
+        this.state.selectedTerritoryId = territoryId
+        // We don't need to set isSelected in state since frontend will show selection based on selectedTerritoryId
+      }
+    } else {
+      // Selecting the defending territory and attack
+      const targetTerritory = this.state.territories.get(territoryId.toString())
+      if (!targetTerritory) return
+
+      const selectedTerritory = this.state.territories.get(
+        this.state.selectedTerritoryId.toString()
+      )
+      if (!selectedTerritory) return
+
+      // Check if target is owned by enemy and adjacent
+      if (
+        targetTerritory.owner !== player.id &&
+        this.areTerritoriesAdjacent(this.state.selectedTerritoryId, territoryId)
+      ) {
+        this.state.targetTerritoryId = territoryId
+        this.resolveAttack()
+      } else {
+        // If clicking on own territory, deselect
+        if (territoryId === this.state.selectedTerritoryId) {
+          this.state.selectedTerritoryId = -1
+        } else {
+          // Invalid target, reset selection
+          this.state.selectedTerritoryId = -1
+        }
+      }
+    }
   }
 
   handleFortifySelection(client: Client, territoryId: number) {
-    // Implementation for fortify selection
-    // This will be filled out in later steps
+    const playerIndex = this.getPlayerIndex(client)
+    if (playerIndex !== this.state.currentPlayerIndex) return
+
+    const player = this.state.players.get(client.sessionId)
+    if (!player) return
+
+    if (this.state.selectedTerritoryId === -1) {
+      // Selecting the source territory
+      const territory = this.state.territories.get(territoryId.toString())
+      if (!territory) return
+
+      if (territory.owner === player.id && territory.armies > 1) {
+        this.state.selectedTerritoryId = territoryId
+      }
+    } else {
+      // Selecting the destination territory
+      const targetTerritory = this.state.territories.get(territoryId.toString())
+      if (!targetTerritory) return
+
+      const selectedTerritory = this.state.territories.get(
+        this.state.selectedTerritoryId.toString()
+      )
+      if (!selectedTerritory) return
+
+      // Check if target is owned by player and not the same as source
+      if (targetTerritory.owner === player.id && territoryId !== this.state.selectedTerritoryId) {
+        this.state.targetTerritoryId = territoryId
+
+        // Calculate move armies (half by default, min 1, max armies-1)
+        const maxArmies = selectedTerritory.armies - 1
+        const armiesToMove = Math.max(1, Math.floor(maxArmies / 2))
+
+        // Execute the fortify move
+        selectedTerritory.armies -= armiesToMove
+        targetTerritory.armies += armiesToMove
+
+        // Reset selections
+        this.state.selectedTerritoryId = -1
+        this.state.targetTerritoryId = -1
+      } else if (territoryId === this.state.selectedTerritoryId) {
+        // Deselect if clicking same territory
+        this.state.selectedTerritoryId = -1
+      } else {
+        // Invalid target, reset selection
+        this.state.selectedTerritoryId = -1
+      }
+    }
   }
 
   handleEndPhase() {
-    // Logic for transitioning between game phases
-    // This will be filled out in later steps
+    // Handle different phase transitions
+    if (this.state.gamePhase === 'placement') {
+      // From placement -> attack (same player)
+      this.state.gamePhase = 'attack'
+      this.state.selectedTerritoryId = -1
+      this.state.targetTerritoryId = -1
+    } else if (this.state.gamePhase === 'attack') {
+      // From attack -> fortify (same player)
+      this.state.gamePhase = 'fortify'
+      this.state.selectedTerritoryId = -1
+      this.state.targetTerritoryId = -1
+    } else if (this.state.gamePhase === 'fortify') {
+      // Reset selected territories
+      this.state.selectedTerritoryId = -1
+      this.state.targetTerritoryId = -1
+
+      // Find the next active player (not eliminated)
+      let nextPlayerFound = false
+      let nextPlayerIndex = this.state.currentPlayerIndex
+      const playerSessionIds = Array.from(this.state.players.keys())
+      const playerCount = playerSessionIds.length
+
+      for (let i = 1; i <= playerCount; i++) {
+        // Calculate next player index with wrapping
+        nextPlayerIndex = (this.state.currentPlayerIndex + i) % playerCount
+        const nextPlayerSessionId = playerSessionIds[nextPlayerIndex]
+        const nextPlayer = this.state.players.get(nextPlayerSessionId)
+
+        // Check if this player is still in the game
+        if (nextPlayer && !nextPlayer.eliminated) {
+          nextPlayerFound = true
+          break
+        }
+      }
+
+      // If no active players found besides current one, game is over
+      if (!nextPlayerFound) {
+        // Current player wins!
+        this.gameOver(this.state.currentPlayerIndex)
+        return
+      }
+
+      // Move to the next active player
+      this.state.currentPlayerIndex = nextPlayerIndex
+      const currentPlayerSessionId = playerSessionIds[this.state.currentPlayerIndex]
+      const currentPlayer = this.state.players.get(currentPlayerSessionId)
+
+      if (currentPlayer) {
+        // Calculate reinforcements including continent bonuses for the new player
+        currentPlayer.reinforcements = this.calculateReinforcements(currentPlayer)
+
+        // Move to placement phase for next player
+        this.state.gamePhase = 'placement'
+      }
+    }
+  }
+
+  // Helper methods to support the main functions
+
+  areTerritoriesAdjacent(territoryId1: number, territoryId2: number): boolean {
+    const adjacencyMap = JSON.parse(this.state.adjacencyMapData)
+    return adjacencyMap[territoryId1]?.includes(territoryId2) || false
+  }
+
+  advanceToNextPlayer() {
+    const playerSessionIds = Array.from(this.state.players.keys())
+    this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % playerSessionIds.length
+  }
+
+  resolveAttack() {
+    if (this.state.selectedTerritoryId === -1 || this.state.targetTerritoryId === -1) return
+
+    const attackerTerritory = this.state.territories.get(this.state.selectedTerritoryId.toString())
+    const defenderTerritory = this.state.territories.get(this.state.targetTerritoryId.toString())
+
+    if (!attackerTerritory || !defenderTerritory) return
+
+    // Maximum number of dice
+    const maxAttackerDice = Math.min(3, attackerTerritory.armies - 1)
+    const maxDefenderDice = Math.min(2, defenderTerritory.armies)
+
+    // Roll dice
+    const attackerDice = this.rollDice(maxAttackerDice).sort((a, b) => b - a)
+    const defenderDice = this.rollDice(maxDefenderDice).sort((a, b) => b - a)
+
+    // Compare dice pairs
+    let attackerLosses = 0
+    let defenderLosses = 0
+
+    for (let i = 0; i < Math.min(attackerDice.length, defenderDice.length); i++) {
+      if (attackerDice[i] > defenderDice[i]) {
+        defenderLosses++
+      } else {
+        attackerLosses++
+      }
+    }
+
+    // Apply losses
+    attackerTerritory.armies -= attackerLosses
+    defenderTerritory.armies -= defenderLosses
+
+    // Check if defender was defeated
+    if (defenderTerritory.armies <= 0) {
+      // Get defender player
+      let defenderPlayer = null
+      for (const [sessionId, player] of this.state.players.entries()) {
+        if (player.id === defenderTerritory.owner) {
+          defenderPlayer = player
+          break
+        }
+      }
+
+      // Get attacker player
+      const attackerPlayer = Array.from(this.state.players.values()).find(
+        (player) => player.id === attackerTerritory.owner
+      )
+
+      if (!attackerPlayer) return
+
+      // Calculate armies to move (all but 1 from attacker)
+      const armiesToMove = attackerTerritory.armies - 1
+
+      // Update territory ownership
+      attackerTerritory.armies -= armiesToMove
+      defenderTerritory.armies = armiesToMove
+
+      // Update territory owner
+      const oldOwner = defenderTerritory.owner
+      defenderTerritory.owner = attackerPlayer.id
+
+      // Update players' territory lists
+      if (defenderPlayer) {
+        const index = defenderPlayer.territories.indexOf(this.state.targetTerritoryId)
+        if (index > -1) {
+          defenderPlayer.territories.splice(index, 1)
+        }
+
+        // Check if the defender player has been eliminated
+        if (defenderPlayer.territories.length === 0) {
+          defenderPlayer.eliminated = true
+        }
+      }
+
+      attackerPlayer.territories.push(this.state.targetTerritoryId)
+
+      // Check for game over
+      this.checkGameOver()
+    }
+
+    // Reset selections
+    this.state.selectedTerritoryId = -1
+    this.state.targetTerritoryId = -1
+  }
+
+  rollDice(count: number): number[] {
+    const results: number[] = []
+    for (let i = 0; i < count; i++) {
+      results.push(Math.floor(Math.random() * 6) + 1)
+    }
+    return results
+  }
+
+  calculateReinforcements(player: Player): number {
+    // Base reinforcements from territories
+    let reinforcements = Math.max(Math.floor(player.territories.length / 3), 3)
+
+    // Add bonuses for continents
+    const continents = JSON.parse(this.state.continentData)
+
+    for (const continent in continents) {
+      const continentTerritories = continents[continent].territories
+      const bonus = continents[continent].bonus
+
+      // Check if player owns all territories in the continent
+      const ownsAll = continentTerritories.every((territoryId: number) =>
+        player.territories.includes(territoryId)
+      )
+
+      if (ownsAll) {
+        reinforcements += bonus
+      }
+    }
+
+    return reinforcements
+  }
+
+  checkGameOver() {
+    let activePlayers = 0
+    let lastActivePlayerIndex = -1
+
+    this.state.players.forEach((player, sessionId) => {
+      if (!player.eliminated) {
+        activePlayers++
+        lastActivePlayerIndex = player.id
+      }
+    })
+
+    // If only one player remains, they win
+    if (activePlayers === 1) {
+      this.gameOver(lastActivePlayerIndex)
+      return true
+    }
+
+    // Also check if any player has conquered all territories
+    this.state.players.forEach((player) => {
+      if (player.territories.length === this.state.territories.size) {
+        this.gameOver(player.id)
+        return true
+      }
+    })
+
+    return false
+  }
+
+  gameOver(winnerIndex: number) {
+    // Set game phase to finished
+    this.state.gamePhase = 'gameOver'
+
+    // Broadcast game over message
+    this.broadcast('gameOver', { winnerId: winnerIndex })
   }
 
   onJoin(client: Client, options: any) {
