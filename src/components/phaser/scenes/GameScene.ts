@@ -142,6 +142,19 @@ export class GameScene extends Phaser.Scene {
 
     // Start the initial placement phase
     this.startPlacementPhase()
+
+    window.gameEvents.on('territoryClicked', (data) => {
+      // Handle based on phase - exactly like you do now
+
+      console.log('TErritory is clicked, got it by events normally')
+
+      if (data.phase === 'placement') {
+        console.log('TErritory is clicked, got it by events placement phase')
+        this.territoryManager.addTerritoryArmies(data.territoryId, 1)
+        // Update current player's reinforcements
+        // ... rest of your existing code
+      }
+    })
   }
 
   setupGameInfo() {
@@ -573,6 +586,11 @@ export class GameScene extends Phaser.Scene {
 
   handleTerritoryClick(territory: Territory) {
     const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
+
+    window.gameEvents.emit('territoryClicked', {
+      territoryId: territory.id,
+      phase: window.gameState.gamePhase,
+    })
 
     // INITIAL PLACEMENT PHASE
     if (window.gameState.gamePhase === 'initialPlacement') {

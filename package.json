@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:types:prod": "export $(cat .env.production | xargs) && supabase gen types typescript --project-id ${SUPABASE_PROJECT_REF} --schema public > src/lib/database.types.ts"
   },
   "keywords": [
     "game",
@@ -19,10 +20,15 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.10",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.49.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "colyseus.js": "^0.16.16",
+    "lucide-react": "^0.503.0",
     "next": "15.3.1",
     "phaser": "^3.88.2",
     "react": "^19.0.0",
