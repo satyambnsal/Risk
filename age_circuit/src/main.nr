@@ -1,3 +1,9 @@
+mod common;
+mod visibility;
+mod game_initialization;
+
+use crate::common::constants;
+
 fn main(age: u32) {
     assert(age >= 18);
     let message = "Noir Gud";
@@ -7,6 +13,7 @@ fn main(age: u32) {
 
 
     let hash = std::hash::pedersen_hash(arr);
+    println(constants::MAX_TERRITORIES);
 
     let commitment = std::hash::pedersen_commitment(arr);
     println(hash);

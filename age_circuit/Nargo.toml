@@ -4,3 +4,4 @@ type = "bin"
 authors = [""]
 
 [dependencies]
+mpclib = { tag = "main", git = "https://github.com/zac-williamson/mpclib" }
