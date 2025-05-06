@@ -1,6 +1,7 @@
 mod common;
 mod visibility;
 mod game_initialization;
+mod game_mechanics;
 
 use crate::common::constants;
 
@@ -10,7 +11,6 @@ fn main(age: u32) {
     let arr = message.as_bytes().map(|charCode| charCode as Field);
     println(arr);
     // let field_arr = arr;
-
 
     let hash = std::hash::pedersen_hash(arr);
     println(constants::MAX_TERRITORIES);

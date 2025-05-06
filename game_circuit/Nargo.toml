@@ -1,5 +1,5 @@
 [package]
-name = "age_circuit"
+name = "game_circuit"
 type = "bin"
 authors = [""]
 

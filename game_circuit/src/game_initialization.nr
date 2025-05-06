@@ -74,7 +74,7 @@ pub fn assign_initial_territories(
 }
 
 pub fn commit_to_user_secrets(
-    game_state: &mut GameState,
+    game_state: GameState,
     encrypt_secret: Field,
     mask_secret: Field,
     player_id: Field,
@@ -87,4 +87,53 @@ pub fn commit_to_user_secrets(
     updated.mpc_state.user_mask_secret_hashes[player_id - 1] = secret_hashes[1];
 
     updated
+}
+
+pub fn register_all_players(
+    game_state: GameState,
+    player_secrets: [(Field, Field); MAX_PLAYERS],
+) -> GameState {
+    let mut updated = game_state;
+
+    for i in 0..MAX_PLAYERS {
+        let player_id = i + 1;
+        let (encrypt_secret, mask_secret) = player_secrets[i];
+
+        // Only process valid players with non-zero secrets
+        if ((encrypt_secret as u32 != 0) & (mask_secret as u32 != 0)) {
+            updated =
+                commit_to_user_secrets(updated, encrypt_secret, mask_secret, player_id as Field);
+        }
+    }
+
+    updated
+}
+
+/// Helper function to count territories owned by each player
+pub fn count_player_territories(game_state: GameState) -> [Field; MAX_PLAYERS + 1] {
+    let mut counts = [0; MAX_PLAYERS + 1];
+
+    for i in 0..MAX_TERRITORIES {
+        let owner = game_state.territories[i].owner_id;
+        if (owner as u32) > 0 & owner as u32 <= MAX_PLAYERS {
+            counts[owner] += 1;
+        }
+    }
+
+    counts
+}
+
+/// Helper function to calculate reinforcements for a player
+pub fn calculate_reinforcements(game_state: GameState, player_id: Field) -> Field {
+    let territory_counts = count_player_territories(game_state);
+    let player_territory_count = territory_counts[player_id];
+
+    // Basic rule: Number of territories divided by 3, with a minimum of 3
+    let reinforcements = player_territory_count / 3;
+    if reinforcements as u32 < 3 {
+        3
+    } else {
+        reinforcements
+    }
+    // Note: This is a simplified version; a real game would include continent bonuses, etc.
 }
