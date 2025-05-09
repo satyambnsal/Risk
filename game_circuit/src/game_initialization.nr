@@ -1,5 +1,3 @@
-// game_initialization.nr
-use dep::std;
 use std::hash::poseidon2::Poseidon2::hash as poseidon2;
 
 use crate::common::{AdjacencyMap, GameState, MPCState, PlayerState, Territory};
@@ -8,12 +6,10 @@ use crate::common::constants::{
 };
 
 pub fn initialize_game_state(num_players: u32) -> GameState {
-    // Validate number of players
     assert(num_players >= 2 & num_players <= MAX_PLAYERS, "Invalid number of players");
 
     let mut game_state = GameState::default();
 
-    // Initialize territories
     for i in 0..MAX_TERRITORIES {
         let mut territory = Territory::default();
         territory.id = i as Field;
@@ -33,7 +29,6 @@ pub fn initialize_player_state(
     encrypt_secret: Field,
     mask_secret: Field,
 ) -> PlayerState {
-    // Validate player ID
     assert(player_id as u32 > 0 & player_id as u32 <= MAX_PLAYERS, "Invalid player ID");
 
     // Validate secrets are non-zero
@@ -66,14 +61,14 @@ pub fn initialize_player_state(
 pub fn create_risk_adjacency_map() -> AdjacencyMap {
     let mut map = AdjacencyMap::default();
 
-    // This is a simplified version of Risk map adjacencies
+    // Simple version of risk map with just 24 territories due to Noir bitshift constraint
     // North America (9 territories)
     map = map.add_adjacency(0, 1); // Alaska - Northwest Territory
     map = map.add_adjacency(0, 3); // Alaska - Kamchatka (across the Bering Strait)
     map = map.add_adjacency(1, 2); // Northwest Territory - Greenland
     map = map.add_adjacency(1, 4); // Northwest Territory - Alberta
     map = map.add_adjacency(2, 6); // Greenland - Quebec
-    // map = map.add_adjacency(2, 14); // Greenland - Iceland
+    map = map.add_adjacency(2, 14); // Greenland - Iceland
     map = map.add_adjacency(3, 4); // Alberta - Ontario
     map = map.add_adjacency(4, 5); // Ontario - Quebec
     map = map.add_adjacency(4, 7); // Ontario - Eastern United States
@@ -112,48 +107,6 @@ pub fn create_risk_adjacency_map() -> AdjacencyMap {
     map = map.add_adjacency(20, 21); // Congo - North Africa
     map = map.add_adjacency(20, 22); // Congo - Egypt
     map = map.add_adjacency(20, 23); // Congo - East Africa
-    // map = map.add_adjacency(20, 25); // Congo - South Africa
-    // map = map.add_adjacency(21, 22); // North Africa - Egypt
-    // map = map.add_adjacency(22, 23); // Egypt - East Africa
-    // map = map.add_adjacency(22, 24); // Egypt - Middle East
-    // map = map.add_adjacency(23, 24); // East Africa - Middle East
-    // map = map.add_adjacency(23, 25); // East Africa - South Africa
-    // map = map.add_adjacency(23, 26); // East Africa - Madagascar
-    // map = map.add_adjacency(25, 26); // South Africa - Madagascar
-
-    // // Asia (12 territories)
-    // map = map.add_adjacency(19, 24); // Ukraine - Middle East
-    // map = map.add_adjacency(19, 27); // Ukraine - Afghanistan
-    // map = map.add_adjacency(19, 28); // Ukraine - Ural
-    // map = map.add_adjacency(24, 27); // Middle East - Afghanistan
-    // map = map.add_adjacency(24, 31); // Middle East - India
-    // map = map.add_adjacency(27, 28); // Afghanistan - Ural
-    // map = map.add_adjacency(27, 29); // Afghanistan - China
-    // map = map.add_adjacency(27, 31); // Afghanistan - India
-    // map = map.add_adjacency(28, 29); // Ural - China
-    // map = map.add_adjacency(28, 30); // Ural - Siberia
-    // map = map.add_adjacency(29, 30); // China - Siberia
-    // map = map.add_adjacency(29, 31); // China - India
-    // map = map.add_adjacency(29, 32); // China - Siam
-    // map = map.add_adjacency(29, 33); // China - Mongolia
-    // map = map.add_adjacency(29, 34); // China - Japan
-    // map = map.add_adjacency(30, 33); // Siberia - Mongolia
-    // map = map.add_adjacency(30, 35); // Siberia - Irkutsk
-    // map = map.add_adjacency(30, 36); // Siberia - Yakutsk
-    // map = map.add_adjacency(31, 32); // India - Siam
-    // map = map.add_adjacency(32, 37); // Siam - Indonesia
-    // map = map.add_adjacency(33, 34); // Mongolia - Japan
-    // map = map.add_adjacency(33, 35); // Mongolia - Irkutsk
-    // map = map.add_adjacency(33, 41); // Mongolia - Kamchatka
-    // map = map.add_adjacency(35, 36); // Irkutsk - Yakutsk
-    // map = map.add_adjacency(35, 41); // Irkutsk - Kamchatka
-    // map = map.add_adjacency(36, 41); // Yakutsk - Kamchatka
-    // map = map.add_adjacency(37, 38); // Indonesia - New Guinea
-    // map = map.add_adjacency(37, 39); // Indonesia - Western Australia
-    // map = map.add_adjacency(38, 39); // New Guinea - Western Australia
-    // map = map.add_adjacency(38, 40); // New Guinea - Eastern Australia
-    // map = map.add_adjacency(39, 40); // Western Australia - Eastern Australia
-    // map = map.add_adjacency(41, 0); // Kamchatka - Alaska (complete the loop)
 
     map
 }
@@ -163,7 +116,6 @@ pub fn assign_initial_territories(
     num_players: u32,
     random_seed: Field,
 ) -> GameState {
-    // Validate number of players
     assert(num_players >= 2 & num_players <= MAX_PLAYERS, "Invalid number of players");
 
     let mut updated_state = game_state;
@@ -243,7 +195,6 @@ pub fn count_player_territories(game_state: GameState) -> [Field; MAX_PLAYERS + 
     counts
 }
 
-// Calculate reinforcements for a player
 pub fn calculate_reinforcements(game_state: GameState, player_id: Field) -> Field {
     let territory_counts = count_player_territories(game_state);
     let player_idx = player_id as u32;
@@ -257,11 +208,8 @@ pub fn calculate_reinforcements(game_state: GameState, player_id: Field) -> Fiel
     } else {
         reinforcements
     }
-
-    // Note: In a real game, you would add continent bonuses here
 }
 
-// Get player's initial reinforcements at the start of their turn
 pub fn get_turn_reinforcements(game_state: GameState, player_state: PlayerState) -> PlayerState {
     assert(game_state.current_player == player_state.player_id, "Not this player's turn");
 

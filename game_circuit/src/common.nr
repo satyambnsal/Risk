@@ -1,5 +1,5 @@
 pub mod constants {
-    pub global MAX_PLAYERS: u32 = 6;
+    pub global MAX_PLAYERS: u32 = 2;
     pub global MAX_TERRITORIES: u32 = 24;
     pub global MAX_TROOPS_PER_TERRITORY: u32 = 100;
     pub global INITIAL_TROOPS_PER_PLAYER: u32 = 40;
@@ -17,7 +17,6 @@ impl Territory {
         Territory { id: 0, owner_id: 0, troop_count: 0 }
     }
 
-    // Encode territory data into a single Field for compact storage
     pub fn encode(self) -> Field {
         let id_part = self.id;
         let owner_part = self.owner_id * 0x100;
@@ -26,7 +25,6 @@ impl Territory {
         id_part + owner_part + troops_part
     }
 
-    // Decode a Field back into a Territory
     pub fn decode(encoded: Field) -> Self {
         let id = encoded as u32 % 0x100;
         let owner_id = (encoded as u32 / 0x100) % 0x100;
@@ -37,8 +35,6 @@ impl Territory {
 }
 
 pub struct AdjacencyMap {
-    // For each territory, store a bit map of its neighbors
-    // e.g. adjacency[0] = 0b110 means territory 0 is adjacent to territories 1 and 2
     pub adjacency: [u32; constants::MAX_TERRITORIES],
 }
 
@@ -47,7 +43,6 @@ impl AdjacencyMap {
         AdjacencyMap { adjacency: [0; constants::MAX_TERRITORIES] }
     }
 
-    // Check if two territories are adjacent
     pub fn are_adjacent(self, from_territory: Field, to_territory: Field) -> bool {
         let from_idx = from_territory as u32;
         let to_bit = 1 << (to_territory as u8);
@@ -57,7 +52,6 @@ impl AdjacencyMap {
 
     // Add an adjacency between two territories (bidirectional)
     pub fn add_adjacency(mut self, territory1: Field, territory2: Field) -> Self {
-        // Validate territory IDs are within bounds
         assert(
             territory1 as u32 >= 0 & territory1 as u32 < constants::MAX_TERRITORIES,
             "Territory1 ID out of bounds",
@@ -70,11 +64,9 @@ impl AdjacencyMap {
         let t1_idx = territory1 as u32;
         let t2_idx = territory2 as u32;
 
-        // Create bit masks for the adjacencies
         let t2_bit = 1 << t2_idx as u8;
         let t1_bit = 1 << t1_idx as u8;
 
-        // Update adjacency map
         self.adjacency[t1_idx] |= t2_bit;
         self.adjacency[t2_idx] |= t1_bit;
 
@@ -82,7 +74,6 @@ impl AdjacencyMap {
     }
 }
 
-// MPC State for secure computation
 pub struct MPCState {
     pub user_encrypt_secret_hashes: [Field; constants::MAX_PLAYERS],
     pub user_mask_secret_hashes: [Field; constants::MAX_PLAYERS],
@@ -129,7 +120,7 @@ pub struct PlayerState {
     pub territories_view: [Territory; constants::MAX_TERRITORIES],
     pub unallocated_troops: u32,
     pub reinforcements: u32,
-    pub has_conquered_territory: bool, // For tracking if player can get a card
+    pub has_conquered_territory: bool,
 }
 
 impl PlayerState {
@@ -172,7 +163,6 @@ pub enum GameMove {
     EndTurn,
 }
 
-// Result structure for attacks
 pub struct AttackResult {
     pub success: bool,
     pub attacker_losses: u32,

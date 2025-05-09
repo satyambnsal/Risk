@@ -1,6 +1,6 @@
 [package]
 name = "game_circuit"
-type = "bin"
+type = "lib"
 authors = [""]
 
 [dependencies]

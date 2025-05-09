@@ -68,7 +68,7 @@ fn roll_dice(
 }
 
 // Sort an array of dice values in descending order
-fn sort_dice(dice: [u32; 3], count: u32) -> [u32; 3] {
+unconstrained fn sort_dice(dice: [u32; 3], count: u32) -> [u32; 3] {
     let mut sorted = dice;
 
     // Simple bubble sort
@@ -150,29 +150,31 @@ pub fn execute_attack(
         defender_dice,
         nonce,
     );
+    println(f"attacker roles: {attacker_rolls}");
+    println(f"defender roles: {defender_rolls}");
+    let mut sorted_attacker = [0, 0, 0];
+    let mut sorted_defender = [0, 0, 0];
 
+    unsafe {
+        sorted_attacker = sort_dice(attacker_rolls, attacker_dice);
+        sorted_defender = sort_dice(defender_rolls, defender_dice);
+    }
     // Sort dice in descending order
-    let sorted_attacker = sort_dice(attacker_rolls, attacker_dice);
-    let sorted_defender = sort_dice(defender_rolls, defender_dice);
 
     // Compare dice and compute casualties
     let mut attacker_losses = 0;
     let mut defender_losses = 0;
-
     let compare_count = if defender_dice < attacker_dice {
         defender_dice
     } else {
         attacker_dice
     };
 
-    for i in 0..compare_count {
-        if sorted_attacker[i] > sorted_defender[i] {
-            defender_losses += 1;
-        } else {
-            attacker_losses += 1;
-        }
+    unsafe {
+        let result = calculate_losses(compare_count, sorted_attacker, sorted_defender);
+        attacker_losses = result.0;
+        defender_losses = result.1;
     }
-
     // Update result with battle outcome
     result.attacker_losses = attacker_losses;
     result.defender_losses = defender_losses;
@@ -323,4 +325,21 @@ pub fn execute_move(
             }
         },
     }
+}
+
+unconstrained fn calculate_losses(
+    compare_count: u32,
+    sorted_attacker: [u32; 3],
+    sorted_defender: [u32; 3],
+) -> (u32, u32) {
+    let mut defender_losses = 0;
+    let mut attacker_losses = 0;
+    for i in 0..compare_count {
+        if sorted_attacker[i] > sorted_defender[i] {
+            defender_losses += 1;
+        } else {
+            attacker_losses += 1;
+        }
+    }
+    (attacker_losses, defender_losses)
 }

@@ -1,0 +1,11 @@
+{
+  "name": "fog_of_noir_circuits",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/satyambnsal/fog-of-noir",
+  "author": "Satyam Bansal <satyamsgsits1994@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@noir-lang/noir_codegen": "^1.0.0-beta.3"
+  }
+}
