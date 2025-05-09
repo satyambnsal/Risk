@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 // Load the Game component dynamically with no SSR
 const Game = dynamic(() => import('@/components/game/Game'), { ssr: false })
 import { Client, getStateCallbacks } from 'colyseus.js'
+import { initGameState } from '../prover'
 
 async function connect() {
   const client = new Client('http://localhost:2567')
@@ -33,6 +34,9 @@ async function connect() {
 export default function Home() {
   useEffect(() => {
     connect()
+    initGameState().then((res) => {
+      console.log('Initialise game state', res)
+    })
   }, [])
   return (
     <>

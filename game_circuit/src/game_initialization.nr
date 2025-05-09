@@ -64,52 +64,81 @@ pub fn initialize_player_state(
 pub fn create_risk_adjacency_map() -> AdjacencyMap {
     let mut map = AdjacencyMap::default();
 
-    // Simple version of risk map with just 24 territories due to Noir bitshift constraint
-    // North America (9 territories)
-    map = map.add_adjacency(0, 1); // Alaska - Northwest Territory
-    map = map.add_adjacency(0, 3); // Alaska - Kamchatka (across the Bering Strait)
-    map = map.add_adjacency(1, 2); // Northwest Territory - Greenland
-    map = map.add_adjacency(1, 4); // Northwest Territory - Alberta
-    map = map.add_adjacency(2, 6); // Greenland - Quebec
-    map = map.add_adjacency(2, 14); // Greenland - Iceland
-    map = map.add_adjacency(3, 4); // Alberta - Ontario
-    map = map.add_adjacency(4, 5); // Ontario - Quebec
-    map = map.add_adjacency(4, 7); // Ontario - Eastern United States
-    map = map.add_adjacency(5, 7); // Quebec - Eastern United States
-    map = map.add_adjacency(6, 7); // Western United States - Eastern United States
-    map = map.add_adjacency(6, 8); // Western United States - Central America
-    map = map.add_adjacency(8, 9); // Central America - Venezuela
+    // Map Connectivity As per frontend UI map
+    map = map.add_adjacency(0, 1); // NA1 - NA2
+    map = map.add_adjacency(0, 2); // NA1 - NA3
+    map = map.add_adjacency(0, 4); // NA1 - SA1
 
-    // South America (4 territories)
-    map = map.add_adjacency(9, 10); // Venezuela - Peru
-    map = map.add_adjacency(9, 11); // Venezuela - Brazil
-    map = map.add_adjacency(10, 11); // Peru - Brazil
-    map = map.add_adjacency(10, 12); // Peru - Argentina
-    map = map.add_adjacency(11, 12); // Brazil - Argentina
-    map = map.add_adjacency(11, 15); // Brazil - North Africa
+    map = map.add_adjacency(1, 2); // NA2 - NA3
+    map = map.add_adjacency(1, 3); // NA2 - NA4
 
+    map = map.add_adjacency(2, 9); // NA3 - NA4
+    map = map.add_adjacency(2, 18); // NA3 - EU5
+    map = map.add_adjacency(2, 9); // NA3 - AF1
+
+    map = map.add_adjacency(3, 15); // NA4 - EU2
+
+    map = map.add_adjacency(4, 5); // SA1 - SA5
+    map = map.add_adjacency(4, 6); // SA1 - SA6
+    map = map.add_adjacency(4, 13); // SA1 - AF5
+
+    map = map.add_adjacency(5, 6); // SA2 - SA3
+    map = map.add_adjacency(5, 7); // SA2 - SA4
+
+    map = map.add_adjacency(6, 7); // SA3 - SA4
+    map = map.add_adjacency(6, 8); // SA3- SA5
+    map = map.add_adjacency(6, 12); // SA3- AF4
+
+    map = map.add_adjacency(7, 8); // SA4 - SA5
+
+    map = map.add_adjacency(8, 24); // SA5 - AU5
+
+    map = map.add_adjacency(9, 10); // AF1 - AF2
+    map = map.add_adjacency(9, 13); // AF1 - AF5
+    map = map.add_adjacency(9, 18); // AF1 - EU5
+
+    map = map.add_adjacency(10, 11); // AF2 - AF3
+    map = map.add_adjacency(10, 13); // AF2 - AF5
+    map = map.add_adjacency(10, 14); // AF2 - EU1
+    map = map.add_adjacency(10, 17); // AF2 - EU4
+    map = map.add_adjacency(10, 20); // AF2 - AU1
+
+    map = map.add_adjacency(11, 12); // AF3 - AF4
+    map = map.add_adjacency(11, 20); // AF3 - AU1
+    map = map.add_adjacency(11, 21); // AF3 - AU2
+
+    map = map.add_adjacency(12, 13); // AF4 - AF5
+    map = map.add_adjacency(12, 21); // AF4 - AU2
+
+    map = map.add_adjacency(14, 17); // EU1-EU4
+    map = map.add_adjacency(14, 19); // EU1-EU6
+    map = map.add_adjacency(14, 20); // EU1-AU1
+
+    map = map.add_adjacency(15, 16); // EU2-EU3
+    map = map.add_adjacency(15, 18); // EU2-EU5
+
+    map = map.add_adjacency(15, 18); // EU2-EU5
+    map = map.add_adjacency(15, 19); // EU2-EU6
+
+    map = map.add_adjacency(16, 17); // EU3-EU4
+    map = map.add_adjacency(16, 18); // EU3-EU5
+    map = map.add_adjacency(16, 19); // EU3-EU6
+
+    map = map.add_adjacency(17, 18); // EU4-EU5
+    map = map.add_adjacency(17, 19); // EU4-EU6
+
+    map = map.add_adjacency(20, 21); // AU1 - AU2
+    map = map.add_adjacency(20, 22); // AU1 - AU3
+
+    map = map.add_adjacency(21, 22); // AU2 - AU3
+    map = map.add_adjacency(21, 23); // AU2 - AU4
+    map = map.add_adjacency(21, 24); // AU2 - AU5
+
+    map = map.add_adjacency(22, 23); // AU3 - AU4
+    map = map.add_adjacency(22, 24); // AU3 - AU5
+
+    map = map.add_adjacency(23, 24); // AU4 - AU5
     // // Europe (7 territories)
-    map = map.add_adjacency(13, 14); // Great Britain - Iceland
-    map = map.add_adjacency(13, 15); // Great Britain - Western Europe
-    map = map.add_adjacency(13, 16); // Great Britain - Northern Europe
-    map = map.add_adjacency(13, 17); // Great Britain - Scandinavia
-    map = map.add_adjacency(14, 17); // Iceland - Scandinavia
-    map = map.add_adjacency(15, 16); // Western Europe - Northern Europe
-    map = map.add_adjacency(15, 18); // Western Europe - Southern Europe
-    map = map.add_adjacency(15, 21); // Western Europe - North Africa
-    map = map.add_adjacency(16, 17); // Northern Europe - Scandinavia
-    map = map.add_adjacency(16, 18); // Northern Europe - Southern Europe
-    map = map.add_adjacency(16, 19); // Northern Europe - Ukraine
-    map = map.add_adjacency(17, 19); // Scandinavia - Ukraine
-    map = map.add_adjacency(18, 19); // Southern Europe - Ukraine
-    map = map.add_adjacency(18, 21); // Southern Europe - North Africa
-    map = map.add_adjacency(18, 22); // Southern Europe - Egypt
-    // map = map.add_adjacency(18, 24); // Southern Europe - Middle East
-
-    // // Africa (6 territories)
-    map = map.add_adjacency(20, 21); // Congo - North Africa
-    map = map.add_adjacency(20, 22); // Congo - Egypt
-    map = map.add_adjacency(20, 23); // Congo - East Africa
 
     map
 }

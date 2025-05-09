@@ -1,6 +1,6 @@
 pub mod constants {
     pub global MAX_PLAYERS: u32 = 2;
-    pub global MAX_TERRITORIES: u32 = 24;
+    pub global MAX_TERRITORIES: u32 = 25;
     pub global MAX_TROOPS_PER_TERRITORY: u32 = 100;
     pub global INITIAL_TROOPS_PER_PLAYER: u32 = 40;
     pub global MIN_REINFORCEMENTS: u32 = 3;
