@@ -1,16 +1,17 @@
 use mpclib::selective_disclosure::selective_disclosure::RoundState;
 
 pub mod constants {
-    pub global MAX_PLAYERS: u32 = 4;
+    pub global MAX_PLAYERS: u32 = 2;
     pub global MAX_TERRITORIES: u32 = 42;
     pub global MAX_TROOPS_PER_TERRITORY: u32 = 100;
     pub global INITIAL_TROOPS_PER_PLAYER: u32 = 40;
+    pub global MIN_REINFORCEMENTS: u32 = 3;
 }
 
 pub struct Territory {
     pub id: Field,
     pub owner_id: Field,
-    pub troop_count: Field,
+    pub troop_count: u32,
 }
 
 impl std::default::Default for Territory {
@@ -21,7 +22,7 @@ impl std::default::Default for Territory {
 
 impl Territory {
     pub fn encode(self) -> Field {
-        (self.id) + (self.owner_id * 0x100) + (self.troop_count * 0x10000)
+        (self.id) + (self.owner_id * 0x100) + (self.troop_count as Field * 0x10000)
     }
 
     pub fn decode(encoded: Field) -> Self {
@@ -29,7 +30,7 @@ impl Territory {
         Territory {
             id: bytes[0] as Field,
             owner_id: bytes[1] as Field,
-            troop_count: bytes[2] as Field,
+            troop_count: bytes[2] as u32,
         }
     }
 }
@@ -69,7 +70,7 @@ pub struct PlayerState {
     pub mask_secret: Field,
     pub visible_territories: [Field; constants::MAX_TERRITORIES],
     pub territories_view: [Territory; constants::MAX_TERRITORIES],
-    pub unallocated_troops: Field,
+    pub unallocated_troops: u32,
 }
 
 impl std::default::Default for PlayerState {
@@ -87,13 +88,13 @@ impl std::default::Default for PlayerState {
 
 pub struct TroopPlacementMove {
     pub territory_id: Field,
-    pub troop_count: Field,
+    pub troop_count: u32,
 }
 
 pub struct AttackMove {
     pub from_territory_id: Field,
     pub to_territory_id: Field,
-    pub attack_troop_count: Field,
+    pub attack_troop_count: u32,
     pub dice_roll_seed: Field,
 }
 

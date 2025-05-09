@@ -34,7 +34,7 @@ pub fn initialize_player_state(
     player_state.player_id = player_id;
     player_state.encrypt_secret = encrypt_secret;
     player_state.mask_secret = mask_secret;
-    player_state.unallocated_troops = INITIAL_TROOPS_PER_PLAYER as Field;
+    player_state.unallocated_troops = INITIAL_TROOPS_PER_PLAYER;
     player_state.visible_territories = [0; MAX_TERRITORIES];
 
     for i in 0..MAX_TERRITORIES {
