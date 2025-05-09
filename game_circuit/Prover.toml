@@ -1,1 +1,2 @@
-age = "21"
+num_players = 2
+random_seed = 10
