@@ -1,19 +1,42 @@
 # Fog of Noir
 
-A Territorial Conquest game built with Noir circuits and NextJS, offering a novel approach to classic territory conquest gameplay with zero-knowledge proofs.
 
-## Live Demo
+On-chain territory conquest game built with Noir and NextJS, offering a novel approach to classic Risk-style gameplay with cryptographic privacy guarantees.
 
-The game is available online at: [fog-of-noir.vercel.app](http://fog-of-noir.vercel.app/)
+[![Watch Demo Video](https://img.shields.io/badge/Watch-Demo_Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/AV11QVYc4uU)
+[![Play Game](https://img.shields.io/badge/Play-Game-green?style=for-the-badge&logo=vercel)](http://fog-of-noir.vercel.app/)
 
-## Project Structure
+## 🎮 Game Overview
+
+Fog of Noir is a strategic territory control game where players compete to conquer the entire map by managing armies, attacking enemy territories, and securing continent bonuses. All game logic runs through zero-knowledge circuits, providing a unique blend of traditional strategy gaming with blockchain-based cryptographic guarantees.
+
+### Game Screenshots
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center">
+  <img src="./public/previews/1.png"  width="45%"/>
+  <img src="./public/previews/2.png" width="45%" alt="Attack phase" />
+  <img src="./public/previews/3.png" width="45%" alt="Initial placement" />
+  <img src="./public/previews/4.png" width="45%" alt="Game setup screen" />
+</div>
+
+## 📚 How to Play
+
+1. **Initial Placement**: Players take turns placing armies on their assigned territories
+2. **Attack Phase**: Attack adjacent enemy territories using dice rolls
+3. **Fortify Phase**: Redeploy troops to strengthen your position
+4. **Win Condition**: Capture all territories on the map!
+
+Supports 2-6 players with varying game dynamics based on player count.
+
+## 🧩 Project Structure
 
 - **Frontend**: NextJS application with PhaserJS game engine
 - **Circuits**: Noir zero-knowledge circuits in the `game_circuits` folder
+- **Multiplayer**: Realtime gameplay via Colyseus.js (in development)
 
-## Game Circuits
+## ⚙️ Game Circuits
 
-The game logic is implemented as zero-knowledge circuits using the Noir language. These circuits handle game state transitions while maintaining player privacy.
+The game's core logic is implemented as zero-knowledge circuits using the Noir language. These circuits handle game state transitions while maintaining player privacy.
 
 ### Core Game Circuits
 
@@ -31,7 +54,6 @@ The following circuits handle all game mechanics:
 - `end_turn`: Processes end-of-turn state changes
 - `count_player_territories`: Tallies territories owned by each player
 - `check_win_condition`: Determines if a player has won
-- `count_player_territories`: Counts territories by player (used in win conditions)
 
 ### Testing
 
@@ -42,7 +64,7 @@ game_circuits/src/test.nr
 
 Run the test suite with:
 ```bash
-nargo test
+nargo test --show-output
 ```
 
 ### Compiling Circuits
@@ -56,7 +78,7 @@ nargo export
 
 Gate count reports for circuit complexity are available in `game_circuits/gates_report.json`.
 
-## Frontend
+## 🖥️ Frontend
 
 The game frontend is built with modern web technologies:
 
@@ -78,7 +100,17 @@ bun install
 bun dev
 ```
 
-## Dependencies
+The application will be available at `http://localhost:3000`.
+
+## 📹 Demo Video
+
+Watch the gameplay demonstration and learn about the technical implementation:
+
+<a href="https://youtu.be/AV11QVYc4uU">
+  <img src="https://img.youtube.com/vi/AV11QVYc4uU/0.jpg" alt="Fog of Noir Demo Video" width="600">
+</a>
+
+## 🔗 Dependencies
 
 The game circuits use the MPC library for zero-knowledge computations:
 
@@ -86,5 +118,28 @@ The game circuits use the MPC library for zero-knowledge computations:
 mpclib = { tag = "main", git = "https://github.com/zac-williamson/mpclib" }
 ```
 
-## License
-MIT
+## 🚀 Future Roadmap
+
+- Persistent game state using decentralized storage
+- Complete multiplayer implementation with matchmaking
+
+## 📝 Feedback & Contributions
+
+Your feedback is valuable! Feel free to:
+- Open an issue for bugs or feature requests
+- Submit a pull request with improvements
+- Share your thoughts and suggestions
+
+Connect with the developer:
+- Twitter: [@satyambnsal](https://x.com/satyambnsal)
+- Telegram: [satyambnsal](http://t.me/satyambnsal)
+
+Project [Slides Deck](https://docs.google.com/presentation/d/13PqGn1UZDgEwVI_esuVUOcZcPDJk3nAyoU9C0nHhdqI/edit?usp=sharing)
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+Made with ❤️ by Satyam Bansal
