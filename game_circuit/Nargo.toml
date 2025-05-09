@@ -1,7 +1,8 @@
 [package]
 name = "game_circuit"
 type = "lib"
-authors = [""]
+authors = ["Satyam Bansal <satyamsgsits1994@gmail.com>"]
 
 [dependencies]
 mpclib = { tag = "main", git = "https://github.com/zac-williamson/mpclib" }
+

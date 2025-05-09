@@ -15,12 +15,35 @@ import initACVM from '@noir-lang/acvm_js'
 // const noir = new Noir(chessCircuit)
 
 // codegen/index.ts file taken from fog_of_war_chess library
-import { initialize_game_state } from './codegen/index'
+import {
+  assign_initial_territories,
+  initialize_game_state,
+  initialize_player_state,
+} from './codegen/index'
 
 export async function initGameState() {
   try {
     let gameState = await initialize_game_state('2')
-    return gameState
+    let updatedState = await assign_initial_territories(gameState, '2', '1333')
+    let p1_id = 1
+    let p2_id = 2
+    let p1_encrypt_secret = Math.floor(Math.random() * 100000000000)
+    let p1_mask_secret = Math.floor(Math.random() * 100000000000)
+    let p2_encrypt_secret = Math.floor(Math.random() * 100000000000)
+    let p2_mask_secret = Math.floor(Math.random() * 100000000000)
+
+    let player1_state = initialize_player_state(
+      String(p1_id),
+      String(p1_encrypt_secret),
+      String(p1_mask_secret)
+    )
+    let player2_state = initialize_player_state(
+      String(p2_id),
+      String(p2_encrypt_secret),
+      String(p2_mask_secret)
+    )
+
+    return updatedState
   } catch (e) {
     console.log('error? ', e)
   }
