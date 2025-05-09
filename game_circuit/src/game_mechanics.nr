@@ -9,6 +9,7 @@ use crate::common::{
 use crate::common::constants::{MAX_PLAYERS, MAX_TERRITORIES};
 
 // Place troops on a territory
+#[export]
 pub fn place_troops(
     game_state: GameState,
     player_state: PlayerState,
@@ -85,7 +86,7 @@ unconstrained fn sort_dice(dice: [u32; 3], count: u32) -> [u32; 3] {
     sorted
 }
 
-// Execute an attack move
+#[export]
 pub fn execute_attack(
     game_state: GameState,
     player_state: PlayerState,
@@ -209,7 +210,7 @@ pub fn execute_attack(
     (updated_game, updated_player, result)
 }
 
-// Execute a fortify move (move troops between territories)
+#[export]
 pub fn execute_fortify(
     game_state: GameState,
     player_state: PlayerState,
@@ -245,7 +246,7 @@ pub fn execute_fortify(
     }
 }
 
-// Check if any player has won the game
+#[export]
 pub fn check_win_condition(game_state: GameState) -> GameState {
     let mut updated_game = game_state;
     let territory_counts = count_player_territories(game_state);
@@ -276,7 +277,7 @@ pub fn count_player_territories(game_state: GameState) -> [Field; MAX_PLAYERS + 
     counts
 }
 
-// End the current player's turn and move to the next player
+#[export]
 pub fn end_turn(game_state: GameState) -> GameState {
     // Ensure the game has not ended
     assert(!game_state.game_ended, "Game has already ended");
@@ -299,7 +300,6 @@ pub fn end_turn(game_state: GameState) -> GameState {
     updated_game
 }
 
-// Execute a game move based on its type
 pub fn execute_move(
     game_state: GameState,
     player_state: PlayerState,
@@ -324,6 +324,7 @@ pub fn execute_move(
                 (game_state, player_state, false)
             }
         },
+        _ => (game_state, player_state, false),
     }
 }
 

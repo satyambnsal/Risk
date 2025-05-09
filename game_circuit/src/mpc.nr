@@ -1,4 +1,3 @@
-// mpc.nr - Multi-Party Computation for hidden information
 use dep::std;
 use std::hash::poseidon2::Poseidon2::hash as poseidon2;
 

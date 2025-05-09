@@ -5,6 +5,7 @@ use crate::common::constants::{
     INITIAL_TROOPS_PER_PLAYER, MAX_PLAYERS, MAX_TERRITORIES, MIN_REINFORCEMENTS,
 };
 
+#[export]
 pub fn initialize_game_state(num_players: u32) -> GameState {
     assert(num_players >= 2 & num_players <= MAX_PLAYERS, "Invalid number of players");
 
@@ -24,6 +25,7 @@ pub fn initialize_game_state(num_players: u32) -> GameState {
     game_state
 }
 
+#[export]
 pub fn initialize_player_state(
     player_id: Field,
     encrypt_secret: Field,
@@ -58,6 +60,7 @@ pub fn initialize_player_state(
     player_state
 }
 
+#[export]
 pub fn create_risk_adjacency_map() -> AdjacencyMap {
     let mut map = AdjacencyMap::default();
 
@@ -111,6 +114,7 @@ pub fn create_risk_adjacency_map() -> AdjacencyMap {
     map
 }
 
+#[export]
 pub fn assign_initial_territories(
     game_state: GameState,
     num_players: u32,
@@ -137,6 +141,7 @@ pub fn assign_initial_territories(
     updated_state
 }
 
+#[export]
 pub fn commit_to_user_secrets(
     game_state: GameState,
     encrypt_secret: Field,
@@ -161,6 +166,7 @@ pub fn commit_to_user_secrets(
     updated
 }
 
+#[export]
 pub fn register_all_players(
     game_state: GameState,
     player_secrets: [(Field, Field); MAX_PLAYERS],
@@ -180,7 +186,7 @@ pub fn register_all_players(
     updated
 }
 
-// Count territories owned by each player
+#[export]
 pub fn count_player_territories(game_state: GameState) -> [Field; MAX_PLAYERS + 1] {
     let mut counts = [0; MAX_PLAYERS + 1];
 
