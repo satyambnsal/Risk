@@ -8,7 +8,7 @@ On-chain territory conquest game built with Noir and NextJS, offering a novel ap
 
 ## 🎮 Game Overview
 
-Fog of Noir is a strategic territory control game where players compete to conquer the entire map by managing armies, attacking enemy territories, and securing continent bonuses. All game logic runs through zero-knowledge circuits, providing a unique blend of traditional strategy gaming with blockchain-based cryptographic guarantees.
+A strategic territory control game where players battle for map dominance through zero-knowledge circuits. Noir enables client-side proving, allowing players to generate cryptographic proofs locally that verify their moves are valid without revealing strategy. The multi-party computation (MPC) framework ensures fair gameplay while maintaining the "fog of war" element essential to strategy games without central server trust.
 
 ### Game Screenshots
 
@@ -19,7 +19,7 @@ Fog of Noir is a strategic territory control game where players compete to conqu
   <img src="./public/previews/4.png" width="45%" alt="Game setup screen" />
 </div>
 
-## 📚 How to Play
+## How to Play
 
 1. **Initial Placement**: Players take turns placing armies on their assigned territories
 2. **Attack Phase**: Attack adjacent enemy territories using dice rolls
