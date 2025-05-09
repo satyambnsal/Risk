@@ -35,6 +35,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 // Create the game instance
 export function createGame(): Phaser.Game {
+  //@ts-ignore
   window.gameEvents = new Phaser.Events.EventEmitter()
 
   return new Phaser.Game(config)

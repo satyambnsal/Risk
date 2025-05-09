@@ -167,7 +167,7 @@ export class GameScene extends Phaser.Scene {
     this.initializeNoirContract().then(() => {
       this.startPlacementPhase()
     })
-
+    //@ts-ignore
     window.gameEvents.on('territoryClicked', (data) => {
       // Handle based on phase - exactly like you do now
 
@@ -667,6 +667,7 @@ export class GameScene extends Phaser.Scene {
   async handleTerritoryClick(territory: Territory) {
     const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
+    //@ts-ignore
     window.gameEvents.emit('territoryClicked', {
       territoryId: territory.id,
       phase: window.gameState.gamePhase,

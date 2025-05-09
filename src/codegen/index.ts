@@ -4,7 +4,7 @@
 
 import { Noir, InputMap, CompiledCircuit, ForeignCallHandler } from '@noir-lang/noir_js'
 
-export { ForeignCallHandler } from '@noir-lang/noir_js'
+export { type ForeignCallHandler } from '@noir-lang/noir_js'
 
 export type Field = string
 export type u32 = string
