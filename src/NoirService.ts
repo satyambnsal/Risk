@@ -1,3 +1,4 @@
+import { UltraHonkBackend } from '@aztec/bb.js'
 import {
   initialize_game_state,
   initialize_player_state,
@@ -20,7 +21,16 @@ import {
   AttackMove,
   FortifyMove,
   AttackResult,
+  place_troops_circuit,
+  place_troopsInputType,
 } from './codegen/index'
+import { Noir } from '@noir-lang/noir_js'
+
+const placeTroopCircuit = new Noir(place_troops_circuit)
+
+const backend = new UltraHonkBackend(place_troops_circuit.bytecode, {
+  threads: navigator.hardwareConcurrency,
+})
 
 function randomField(): Field {
   return Math.floor(Math.random() * 100000000).toString()
@@ -94,13 +104,33 @@ class NoirRiskService {
     }
 
     try {
-      const result = await place_troops(this.gameState, this.playerStates.get(playerId)!, moveData)
-
-      this.gameState = result[0]
-      this.playerStates.set(playerId, result[1])
+      const gameState = this.getGameState()
+      console.log('game state 108', gameState)
+      const start = performance.now()
+      const initializationTime = performance.now() - start
+      const { witness, returnValue } = await placeTroopCircuit.execute({
+        game_state: gameState!,
+        player_state: this.playerStates.get(playerId)!,
+        move_data: moveData,
+      })
+      console.log('Witness', witness)
+      const witnessTime = performance.now() - initializationTime
+      let { proof } = await backend.generateProof(witness, {
+        keccak: true,
+      })
+      proof = proof.slice(4)
+      const provingTime = performance.now() - witnessTime
+      console.log(`Proving time: ${provingTime}ms`)
+      console.log('success')
+      console.log('Return value', returnValue)
+      // const result = await place_troops(this.gameState, this.playerStates.get(playerId)!, moveData)
+      //@ts-ignore
+      this.gameState = returnValue[0] as any as GameState
+      //@ts-ignore
+      this.playerStates.set(playerId, returnValue[1])
       console.log('territory placed successfully')
-      console.log('updated game state', result[0])
-      return result
+      // console.log('updated game state', result[0])
+      return returnValue as any
     } catch (error) {
       console.error('Failed to place troops:', error)
       throw error

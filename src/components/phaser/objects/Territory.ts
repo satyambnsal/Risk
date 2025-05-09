@@ -135,7 +135,7 @@ export class Territory implements TerritoryState {
   setOwner(player: Player): void {
     this.owner = player.id
     // Color name mapping for territory textures
-    const colorNames = ['red', 'blue', 'green', 'yellow', 'purple', 'cyan']
+    const colorNames = ['red', 'blue', 'green', 'yellow', 'purple']
     const colorName = colorNames[player.id]
 
     // Each territory has its own unique image for each color
