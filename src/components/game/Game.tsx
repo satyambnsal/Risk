@@ -8,13 +8,10 @@ export default function Game() {
   const gameInstanceRef = useRef<Phaser.Game | null>(null)
 
   useEffect(() => {
-    // Dynamically import Phaser and the game module
     const initGame = async () => {
       try {
-        // Only import phaser and the game on the client
         const { createGame } = await import('../phaser/main')
 
-        // Create the game instance
         if (gameRef.current && !gameInstanceRef.current) {
           gameInstanceRef.current = createGame()
         }
@@ -35,10 +32,6 @@ export default function Game() {
   }, [])
 
   return (
-    <div
-      id="game-container"
-      ref={gameRef}
-      className="shadow-lg rounded-lg overflow-hidden"
-    ></div>
+    <div id="game-container" ref={gameRef} className="shadow-lg rounded-lg overflow-hidden"></div>
   )
 }

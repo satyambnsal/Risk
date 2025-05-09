@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { TerritoryManager } from '../objects/TerritoryManager'
 import { Territory } from '../objects/Territory'
 import { TerritoryData, ContinentData, Player } from '../types'
+import NoirService from '@/NoirService'
 
 // Territory data
 const territoriesData: TerritoryData[] = [
@@ -12,26 +13,26 @@ const territoriesData: TerritoryData[] = [
   { id: 3, name: 'NA-4', x: 201, y: 115, continent: 'North America' },
 
   // Europe (Green) - 6 territories
-  { id: 4, name: 'EU-1', x: 516, y: 247, continent: 'Europe' },
-  { id: 5, name: 'EU-2', x: 440, y: 88, continent: 'Europe' },
-  { id: 6, name: 'EU-3', x: 523, y: 123, continent: 'Europe' },
-  { id: 7, name: 'EU-4', x: 454, y: 200, continent: 'Europe' },
-  { id: 8, name: 'EU-5', x: 423, y: 150, continent: 'Europe' },
-  { id: 9, name: 'EU-6', x: 543, y: 182, continent: 'Europe' },
+  { id: 14, name: 'EU-1', x: 516, y: 247, continent: 'Europe' },
+  { id: 15, name: 'EU-2', x: 440, y: 88, continent: 'Europe' },
+  { id: 16, name: 'EU-3', x: 523, y: 123, continent: 'Europe' },
+  { id: 17, name: 'EU-4', x: 454, y: 200, continent: 'Europe' },
+  { id: 18, name: 'EU-5', x: 423, y: 150, continent: 'Europe' },
+  { id: 19, name: 'EU-6', x: 543, y: 182, continent: 'Europe' },
 
   // Africa (Blue) - 5 territories
-  { id: 10, name: 'AF-1', x: 339, y: 223, continent: 'Africa' },
-  { id: 11, name: 'AF-2', x: 386, y: 263, continent: 'Africa' },
-  { id: 12, name: 'AF-3', x: 384, y: 348, continent: 'Africa' },
-  { id: 13, name: 'AF-4', x: 298, y: 375, continent: 'Africa' },
-  { id: 14, name: 'AF-5', x: 308, y: 296, continent: 'Africa' },
+  { id: 9, name: 'AF-1', x: 339, y: 223, continent: 'Africa' },
+  { id: 10, name: 'AF-2', x: 386, y: 263, continent: 'Africa' },
+  { id: 11, name: 'AF-3', x: 384, y: 348, continent: 'Africa' },
+  { id: 12, name: 'AF-4', x: 298, y: 375, continent: 'Africa' },
+  { id: 13, name: 'AF-5', x: 308, y: 296, continent: 'Africa' },
 
   // South America (Yellow) - 5 territories
-  { id: 15, name: 'SA-1', x: 155, y: 355, continent: 'South America' },
-  { id: 16, name: 'SA-2', x: 140, y: 416, continent: 'South America' },
-  { id: 17, name: 'SA-3', x: 199, y: 427, continent: 'South America' },
-  { id: 18, name: 'SA-4', x: 155, y: 504, continent: 'South America' },
-  { id: 19, name: 'SA-5', x: 241, y: 494, continent: 'South America' },
+  { id: 4, name: 'SA-1', x: 155, y: 355, continent: 'South America' },
+  { id: 5, name: 'SA-2', x: 140, y: 416, continent: 'South America' },
+  { id: 6, name: 'SA-3', x: 199, y: 427, continent: 'South America' },
+  { id: 7, name: 'SA-4', x: 155, y: 504, continent: 'South America' },
+  { id: 8, name: 'SA-5', x: 241, y: 494, continent: 'South America' },
 
   // Australia (Purple) - 5 territories
   { id: 20, name: 'AU-1', x: 510, y: 345, continent: 'Australia' },
@@ -42,41 +43,41 @@ const territoriesData: TerritoryData[] = [
 ]
 
 // Adjacency map data
-const adjacencyMapData: Record<number, number[]> = {
-  // North America connections
-  0: [1, 2, 15], // NA-1 connects to NA-2, NA-3, SA-1
-  1: [0, 2, 3], // NA-2 connects to NA-1, NA-3, NA-4
-  2: [0, 1, 3, 8, 10], // NA-3 connects to NA-1, NA-2, NA-4, EU-5, AF-1
-  3: [1, 2, 5], // NA-4 connects to NA-2, NA-3, EU-2
+const adjacencyMapData = {
+  // North America
+  0: [1, 2, 4], // NA1 connects to NA2, NA3, SA1
+  1: [0, 2, 3], // NA2 connects to NA1, NA3, NA4
+  2: [0, 1, 3, 9, 18], // NA3 connects to NA1, NA2, NA4, AF1, EU5
+  3: [1, 2, 15], // NA4 connects to NA2, NA3, EU2
 
-  // Europe connections
-  4: [7, 9, 11, 20], // EU-1 connects to EU-4, EU-6, AF-2, AU-1
-  5: [3, 6, 8], // EU-2 connects to NA-4, EU-3, EU-5
-  6: [5, 7, 8, 9], // EU-3 connects to EU-2, EU-4, EU-5, EU-6
-  7: [4, 6, 9, 11], // EU-4 connects to EU-1, EU-3, EU-6, AF-2
-  8: [2, 5, 6, 10], // EU-5 connects to NA-3, EU-2, EU-3, AF-1
-  9: [4, 6, 7], // EU-6 connects to EU-1, EU-3, EU-4
+  // South America
+  4: [0, 5, 6, 13], // SA1 connects to NA1, SA2, SA3, AF5
+  5: [4, 6, 7], // SA2 connects to SA1, SA3, SA4
+  6: [4, 5, 7, 8, 12], // SA3 connects to SA1, SA2, SA4, SA5, AF4
+  7: [5, 6, 8], // SA4 connects to SA2, SA3, SA5
+  8: [6, 7, 24], // SA5 connects to SA3, SA4, AU5
 
-  // Africa connections
-  10: [2, 8, 11, 14], // AF-1 connects to NA-3, EU-5, AF-2, AF-5
-  11: [4, 7, 10, 12, 20, 14], // AF-2 connects to EU-1, EU-4, AF-1, AF-3, AU-1, AF-5
-  12: [11, 13, 14, 20, 21], // AF-3 connects to AF-2, AF-4, AF-5, AU-1, AU-2
-  13: [12, 14, 21, 17], // AF-4 connects to AF-3, AF-5, AU-2, SF-3
-  14: [10, 11, 12, 13, 15], // AF-5  connects to AF-1, AF-2, AF-3, AF-4, SA-1
+  // Africa
+  9: [2, 10, 13, 18], // AF1 connects to NA3, AF2, AF5, EU5
+  10: [9, 11, 13, 14, 17, 20], // AF2 connects to AF1, AF3, AF5, EU1, EU4, AU1
+  11: [10, 12, 20, 21], // AF3 connects to AF2, AF4, AU1, AU2
+  12: [6, 11, 13, 21], // AF4 connects to SA3, AF3, AF5, AU2
+  13: [4, 9, 10, 12], // AF5 connects to SA1, AF1, AF2, AF4
 
-  // South America connections
-  15: [0, 16, 17, 14], // SA-1 connects to NA-1,, SA-2, SA-3, AF-5
-  16: [15, 17, 18], // SA-2 connects to SA-1, SA-3, SA-4
-  17: [15, 16, 18, 19, 13], // SA-3 connects to SA-1, SA-2, SA-4, SA-5, AF-4
-  18: [16, 17, 19], // SA-4 connects to SA-2, SA-3, SA-5
-  19: [17, 18, 24], // SA-5 connects to  SA-3, SA-4, AU-5
+  // Europe
+  14: [10, 17, 19, 20], // EU1 connects to AF2, EU4, EU6, AU1
+  15: [3, 16, 18, 19], // EU2 connects to NA4, EU3, EU5, EU6
+  16: [15, 17, 18, 19], // EU3 connects to EU2, EU4, EU5, EU6
+  17: [10, 14, 16, 18, 19], // EU4 connects to AF2, EU1, EU3, EU5, EU6
+  18: [2, 9, 15, 16, 17], // EU5 connects to NA3, AF1, EU2, EU3, EU4
+  19: [14, 15, 16, 17], // EU6 connects to EU1, EU2, EU3, EU4
 
-  // Australia connections
-  20: [4, 11, 13, 21, 22], // AU-1 connects to EU-1, AF-2, AF-3, AU-2, AU-3
-  21: [12, 13, 20, 22, 23, 24], // AU-2 connects to AF-3, AF-4,  AU-1, AU-3, AU-4, AU-5
-  22: [20, 21, 23], // AU-3 connects to AU-1, AU-2, AU-4
-  23: [21, 22, 24], // AU-4 connects to  AU-2, AU-3, AU-5
-  24: [19, 21, 23], // AU-5 connects to SA-5, AU-2, AU-4
+  // Australia
+  20: [10, 11, 14, 21, 22], // AU1 connects to AF2, AF3, EU1, AU2, AU3
+  21: [11, 12, 20, 22, 23, 24], // AU2 connects to AF3, AF4, AU1, AU3, AU4, AU5
+  22: [20, 21, 23, 24], // AU3 connects to AU1, AU2, AU4, AU5
+  23: [21, 22, 24], // AU4 connects to AU2, AU3, AU5
+  24: [8, 21, 22, 23], // AU5 connects to SA5, AU2, AU3, AU4
 }
 
 // Define continents and their bonus values
@@ -103,6 +104,10 @@ export class GameScene extends Phaser.Scene {
   private attackerDiceSprites: Phaser.GameObjects.Sprite[] = []
   private defenderDiceSprites: Phaser.GameObjects.Sprite[] = []
   private resultIndicators: Phaser.GameObjects.Text[] = []
+  private loadingText!: Phaser.GameObjects.Text
+  private noirStatusText!: Phaser.GameObjects.Text
+  private isNoirInitialized: boolean = false
+  private loading: boolean = false
 
   constructor() {
     super({ key: 'GameScene' })
@@ -115,6 +120,24 @@ export class GameScene extends Phaser.Scene {
 
     // Start with camera faded out, then fade in
     this.cameras.main.fadeIn(800, 0, 0, 0)
+
+    this.loadingText = this.add
+      .text(600, 400, 'Loading Noir Contract...', {
+        fontSize: '32px',
+        color: '#FFFFFF',
+      })
+      .setOrigin(0.5)
+      .setDepth(1000)
+      .setVisible(false)
+
+    // Create noir status text
+    this.noirStatusText = this.add
+      .text(950, 40, 'Noir: Initializing', {
+        fontSize: '14px',
+        color: '#99FF99',
+      })
+      .setOrigin(0.5)
+      .setDepth(100)
 
     // Initialize territory manager
     this.territoryManager = new TerritoryManager(this, adjacencyMapData)
@@ -141,7 +164,9 @@ export class GameScene extends Phaser.Scene {
     this.setupButtons()
 
     // Start the initial placement phase
-    this.startPlacementPhase()
+    this.initializeNoirContract().then(() => {
+      this.startPlacementPhase()
+    })
 
     window.gameEvents.on('territoryClicked', (data) => {
       // Handle based on phase - exactly like you do now
@@ -155,6 +180,55 @@ export class GameScene extends Phaser.Scene {
         // ... rest of your existing code
       }
     })
+  }
+
+  async initializeNoirContract() {
+    this.showLoading('Initializing Noir Risk Contract...')
+
+    try {
+      const numPlayers = window.gameState.players.length
+
+      // Initialize the game state using Noir contract
+      const gameState = await NoirService.initializeGame(2)
+
+      this.isNoirInitialized = true
+      this.noirStatusText.setText('Noir: Connected ✓')
+      this.noirStatusText.setColor('#99FF99')
+
+      console.log('Noir Circuits initialized:', gameState)
+      this.hideLoading()
+      return gameState
+    } catch (error) {
+      console.error('Failed to initialize Noir circuits:', error)
+      this.noirStatusText.setText('Noir: Error X')
+      this.noirStatusText.setColor('#FF9999')
+      this.hideLoading()
+
+      // Fallback to traditional game logic if Noir fails
+      // this.showNoirErrorMessage('Failed to initialize Noir Circuits. Falling back to local mode.')
+      return null
+    }
+  }
+
+  showLoading(message: string) {
+    this.loading = true
+    this.loadingText.setText(message)
+    this.loadingText.setVisible(true)
+
+    // Add a rotating spinner animation
+    this.tweens.add({
+      targets: this.loadingText,
+      alpha: 0.6,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+    })
+  }
+
+  hideLoading() {
+    this.loading = false
+    this.loadingText.setVisible(false)
+    this.tweens.killTweensOf(this.loadingText)
   }
 
   setupGameInfo() {
@@ -290,6 +364,7 @@ export class GameScene extends Phaser.Scene {
 
     // Calculate initial armies based on players
     const numPlayers = window.gameState.players.length
+
     const initialArmies = Math.max(40 - (numPlayers - 2) * 5, 20)
 
     window.gameState.players.forEach((player) => {
@@ -318,6 +393,7 @@ export class GameScene extends Phaser.Scene {
       ;[territoryIds[i], territoryIds[j]] = [territoryIds[j], territoryIds[i]]
     }
 
+    console.log('Game state in assign territories', NoirService.getGameState()?.territories)
     // Assign territories evenly to players with animation
     const numPlayers = window.gameState.players.length
 
@@ -356,10 +432,14 @@ export class GameScene extends Phaser.Scene {
       },
     })
 
-    for (let i = 0; i < territoryIds.length; i++) {
-      const territoryId = territoryIds[i]
-      const playerId = i % numPlayers
-      const player = window.gameState.players[playerId]
+    const territories = NoirService.getGameState()?.territories
+    console.log('territories from circuit', territories)
+    if (!territories) return
+    for (let i = 0; i < territories!.length; i++) {
+      const territory = territories[i]
+      const territoryId = parseInt(territory.id)
+      const playerId = parseInt(territory.owner_id)
+      const player = window.gameState.players[playerId - 1]
 
       // Use delayed call to create staggered assignment animation
       this.time.delayedCall(1500 + i * 50, () => {
@@ -584,7 +664,7 @@ export class GameScene extends Phaser.Scene {
     })
   }
 
-  handleTerritoryClick(territory: Territory) {
+  async handleTerritoryClick(territory: Territory) {
     const currentPlayer = window.gameState.players[window.gameState.currentPlayerIndex]
 
     window.gameEvents.emit('territoryClicked', {
@@ -596,6 +676,7 @@ export class GameScene extends Phaser.Scene {
     if (window.gameState.gamePhase === 'initialPlacement') {
       if (territory.owner === currentPlayer.id && currentPlayer.reinforcements > 0) {
         // Place an army
+        await NoirService.placeTroops(currentPlayer.id + 1, territory.id, 1)
         this.territoryManager.addTerritoryArmies(territory.id, 1)
         currentPlayer.reinforcements--
         this.updateGameInfo()
