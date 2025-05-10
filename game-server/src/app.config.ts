@@ -24,11 +24,11 @@ export default config({
     /**
      * Define your room handlers:
      */
-    gameServer.define('lobby', LobbyRoom)
     gameServer.define('part1_room', Part1Room)
     gameServer.define('part2_room', Part2Room)
     gameServer.define('part3_room', Part3Room)
     gameServer.define('part4_room', Part4Room)
+    gameServer.define('lobby', LobbyRoom)
 
     //
     // keep gameServer reference, so we can
@@ -43,6 +43,20 @@ export default config({
      */
     app.get('/hello', (req, res) => {
       res.send("It's time to kick ass and chew bubblegum!")
+    })
+
+    // Get active lobbies
+    app.get('/lobbies', (req, res) => {
+      const lobbies = gameServerRef.rooms
+        .filter((room) => room.roomName === 'lobby' && !room.locked)
+        .map((room) => ({
+          roomId: room.roomId,
+          clients: room.clients.length,
+          maxClients: room.maxClients,
+          roomName: room.state?.roomName || 'Unnamed Lobby',
+        }))
+
+      res.json(lobbies)
     })
 
     // these latency methods are for development purpose only.

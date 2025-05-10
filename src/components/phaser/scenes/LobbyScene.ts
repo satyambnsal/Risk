@@ -12,6 +12,9 @@ export class LobbyScene extends Phaser.Scene {
   private startButton!: Phaser.GameObjects.Rectangle
   private startButtonText!: Phaser.GameObjects.Text
   private lobbyCodeText!: Phaser.GameObjects.Text
+  private joinContainer!: Phaser.GameObjects.Container
+  private inputCode: string = ''
+  private inputText!: Phaser.GameObjects.Text
 
   constructor() {
     super({ key: 'LobbyScene' })
@@ -20,6 +23,7 @@ export class LobbyScene extends Phaser.Scene {
   init(data: any): void {
     this.isHost = data.isHost || false
     this.lobbyCode = data.lobbyCode || ''
+    this.inputCode = ''
   }
 
   create(): void {
@@ -115,13 +119,101 @@ export class LobbyScene extends Phaser.Scene {
     this.startButton.setVisible(false)
     this.startButtonText.setVisible(false)
 
+    // Create join UI container
+    this.createJoinUI()
+
     // Connect to Colyseus server
     this.connectToServer()
   }
 
+  createJoinUI(): void {
+    // Create a container for join UI elements
+    this.joinContainer = this.add.container(this.cameras.main.width / 2, 400)
+    this.joinContainer.setVisible(false)
+
+    // Input field background
+    const inputBg = this.add.rectangle(0, 0, 300, 50, 0x444444)
+    this.joinContainer.add(inputBg)
+
+    // Input text
+    this.inputText = this.add
+      .text(0, 0, '', {
+        fontSize: '20px',
+        color: '#FFFFFF',
+      })
+      .setOrigin(0.5)
+    this.joinContainer.add(this.inputText)
+
+    // Instruction text
+    const instruction = this.add
+      .text(0, -50, 'Enter Lobby Code:', {
+        fontSize: '24px',
+        color: '#FFFFFF',
+      })
+      .setOrigin(0.5)
+    this.joinContainer.add(instruction)
+
+    // Join button
+    const joinButton = this.add.rectangle(0, 80, 200, 50, 0x33aa33).setInteractive()
+    const joinText = this.add
+      .text(0, 80, 'Join Lobby', {
+        fontSize: '20px',
+        color: '#FFFFFF',
+      })
+      .setOrigin(0.5)
+    this.joinContainer.add(joinButton)
+    this.joinContainer.add(joinText)
+
+    // Add hover effect
+    joinButton.on('pointerover', () => {
+      joinButton.setFillStyle(0x44bb44)
+    })
+    joinButton.on('pointerout', () => {
+      joinButton.setFillStyle(0x33aa33)
+    })
+
+    // Join button functionality
+    joinButton.on('pointerdown', () => {
+      if (this.inputCode.trim().length > 0) {
+        this.joinLobbyWithCode(this.inputCode.trim())
+        this.joinContainer.setVisible(false)
+      }
+    })
+
+    // Set up keyboard input
+    this.input.keyboard.on('keydown', (event: KeyboardEvent) => {
+      if (!this.joinContainer.visible) return
+
+      if (event.keyCode === 8 && this.inputCode.length > 0) {
+        // Backspace - remove last character
+        this.inputCode = this.inputCode.slice(0, -1)
+      } else if (event.keyCode === 13) {
+        // Enter - submit
+        if (this.inputCode.trim().length > 0) {
+          this.joinLobbyWithCode(this.inputCode.trim())
+          this.joinContainer.setVisible(false)
+        }
+      } else if (
+        (event.keyCode >= 48 && event.keyCode <= 90) ||
+        (event.keyCode >= 96 && event.keyCode <= 111) ||
+        event.keyCode === 189 ||
+        event.keyCode === 187
+      ) {
+        // Alphanumeric and some special characters
+        // Make sure we don't get too long
+        if (this.inputCode.length < 15) {
+          this.inputCode += event.key
+        }
+      }
+
+      // Update the text display
+      this.inputText.setText(this.inputCode)
+    })
+  }
+
   async connectToServer(): Promise<void> {
     try {
-      // In a real app, you would import Colyseus.js and not use any/unknown types
+      // TODO: import Colyseus.js properly and not use any/unknown types
       // This is a simplified example
       const colyseusJs = await import('colyseus.js')
       this.client = new colyseusJs.Client('ws://localhost:2567')
@@ -169,14 +261,10 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   showJoinUI(): void {
-    this.statusText.setText('Enter a lobby code to join:')
-
-    // TODO: Create an input field for the lobby code
-    // This is a simplified example for demonstration
-
-    // For now, we'll simulate joining with a random code
-    const simulatedCode = 'ZZqcmFWKx'
-    this.joinLobbyWithCode(simulatedCode)
+    this.statusText.setText('Enter a lobby code to join')
+    this.joinContainer.setVisible(true)
+    this.inputCode = ''
+    this.inputText.setText('')
   }
 
   async joinLobbyWithCode(code: string): Promise<void> {
@@ -197,9 +285,14 @@ export class LobbyScene extends Phaser.Scene {
 
       // Setup room event handlers
       this.setupRoomEvents()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to join lobby:', error)
-      this.statusText.setText('Failed to join lobby. Check console.')
+      this.statusText.setText(`Failed to join lobby: ${error.message || 'Unknown error'}`)
+
+      // Re-show join UI after failed attempt
+      setTimeout(() => {
+        this.showJoinUI()
+      }, 3000)
     }
   }
 
@@ -212,7 +305,7 @@ export class LobbyScene extends Phaser.Scene {
     })
 
     // Handle when the game starts
-    this.room.onMessage('gameStart', () => {
+    this.room.onMessage('startGame', () => {
       this.statusText.setText('Game is starting...')
       // In a real implementation, you would transition to the game scene here
       setTimeout(() => this.scene.start('GameScene'), 2000)
