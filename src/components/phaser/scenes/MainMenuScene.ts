@@ -88,47 +88,88 @@ export class MainMenuScene extends Phaser.Scene {
       fontStyle: 'bold',
     }
 
-    for (let i = 2; i <= 6; i++) {
-      const button = this.add
-        .rectangle(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, 80, 40, 0x33aa33)
-        .setInteractive()
+    //TODO: uncomment this while supporting multiple players
+    // for (let i = 2; i <= 6; i++) {
+    //   const button = this.add
+    //     .rectangle(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, 80, 40, 0x33aa33)
+    //     .setInteractive()
 
-      const text = this.add
-        .text(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, `${i}`, buttonStyle)
-        .setOrigin(0.5)
+    //   const text = this.add
+    //     .text(this.cameras.main.width / 2 - 250 + (i - 2) * 100, 250, `${i}`, buttonStyle)
+    //     .setOrigin(0.5)
 
-      button.on('pointerdown', () => {
-        this.buttonClickSound.play()
-        this.setupPlayers(i)
-        this.scene.start('GameScene')
+    //   button.on('pointerdown', () => {
+    //     this.buttonClickSound.play()
+    //     this.setupPlayers(i)
+    //     this.scene.start('GameScene')
+    //   })
+
+    //   button.on('pointerover', () => {
+    //     this.buttonHoverSound.play({ volume: 0.5 })
+    //     button.setFillStyle(0x44cc44)
+
+    //     this.tweens.add({
+    //       targets: [button, text],
+    //       scaleX: 1.1,
+    //       scaleY: 1.1,
+    //       duration: 100,
+    //       ease: 'Sine.easeOut',
+    //     })
+    //   })
+
+    //   button.on('pointerout', () => {
+    //     button.setFillStyle(0x33aa33)
+
+    //     // Reset scale on hover out
+    //     this.tweens.add({
+    //       targets: [button, text],
+    //       scaleX: 1,
+    //       scaleY: 1,
+    //       duration: 100,
+    //       ease: 'Sine.easeOut',
+    //     })
+    //   })
+    // }
+
+    const button = this.add
+      .rectangle(this.cameras.main.width / 2 - 250 + 250, 250, 80, 40, 0x33aa33)
+      .setInteractive()
+
+    const text = this.add
+      .text(this.cameras.main.width / 2 - 250 + 250, 250, `2`, buttonStyle)
+      .setOrigin(0.5)
+
+    button.on('pointerdown', () => {
+      this.buttonClickSound.play()
+      this.setupPlayers(2)
+      this.scene.start('GameScene')
+    })
+
+    button.on('pointerover', () => {
+      this.buttonHoverSound.play({ volume: 0.5 })
+      button.setFillStyle(0x44cc44)
+
+      this.tweens.add({
+        targets: [button, text],
+        scaleX: 1.1,
+        scaleY: 1.1,
+        duration: 100,
+        ease: 'Sine.easeOut',
       })
+    })
 
-      button.on('pointerover', () => {
-        this.buttonHoverSound.play({ volume: 0.5 })
-        button.setFillStyle(0x44cc44)
+    button.on('pointerout', () => {
+      button.setFillStyle(0x33aa33)
 
-        this.tweens.add({
-          targets: [button, text],
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 100,
-          ease: 'Sine.easeOut',
-        })
+      // Reset scale on hover out
+      this.tweens.add({
+        targets: [button, text],
+        scaleX: 1,
+        scaleY: 1,
+        duration: 100,
+        ease: 'Sine.easeOut',
       })
-
-      button.on('pointerout', () => {
-        button.setFillStyle(0x33aa33)
-
-        // Reset scale on hover out
-        this.tweens.add({
-          targets: [button, text],
-          scaleX: 1,
-          scaleY: 1,
-          duration: 100,
-          ease: 'Sine.easeOut',
-        })
-      })
-    }
+    })
 
     const instructionTextObjects: Phaser.GameObjects.Text[] = []
 
